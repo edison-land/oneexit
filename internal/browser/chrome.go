@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -129,15 +128,13 @@ func (s *ChromeSession) Close() error {
 	if cmd == nil {
 		return nil
 	}
-	if cmd.Process != nil {
-		_ = cmd.Process.Kill()
-	}
+	killTree(cmd)
 	select {
 	case <-exited:
 	case <-time.After(3 * time.Second):
 	}
 	killProfile(dir) // helper processes that outlived the main process
-	if err := os.RemoveAll(dir); err != nil {
+	if err := removeProfileDir(dir); err != nil {
 		return fmt.Errorf("delete profile: %w", err)
 	}
 	if _, err := os.Stat(dir); err == nil {
@@ -152,11 +149,17 @@ func (s *ChromeSession) IsRunning() bool {
 	return s.cmd != nil
 }
 
-func killProfile(dir string) {
-	if dir == "" || runtime.GOOS == "windows" {
-		return
+// removeProfileDir deletes the temporary profile. Windows keeps file handles
+// open for a moment after the processes exit, so retry briefly before failing.
+func removeProfileDir(dir string) error {
+	var err error
+	for attempt := 0; attempt < 20; attempt++ {
+		if err = os.RemoveAll(dir); err == nil {
+			return nil
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
-	_ = exec.Command("pkill", "-9", "-f", regexp.QuoteMeta("--user-data-dir="+dir)).Run()
+	return err
 }
 
 // SweepStale removes profiles (and kills their Chrome) left by a crashed or

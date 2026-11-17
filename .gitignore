@@ -1,5 +1,6 @@
 # build outputs
 bin/
+dist/
 *.app/
 *.zip
 # local tooling
