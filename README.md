@@ -1,8 +1,8 @@
 # TempRoom
 
-**Share your Mac's network exit with one person, for one session, inside one disposable Chrome window.**
+**Share your Mac's or Windows PC's network exit with one person, for one session, inside one disposable Chrome window.**
 
-TempRoom 让你把本机代理（Clash / mihomo 等的 SOCKS5/mixed 端口）的出口，临时借给另一台 Mac 上的伙伴使用。伙伴只能在 TempRoom 打开的临时 Chrome 里用；全程端到端加密，你随时可以一键收回。
+TempRoom 让你把本机代理（Clash / mihomo 等的 SOCKS5/mixed 端口）的出口，临时借给另一台电脑（macOS 或 Windows）上的伙伴使用。伙伴只能在 TempRoom 打开的临时 Chrome 里用；全程端到端加密，你随时可以一键收回。
 
 ```
 伙伴 B 的临时 Chrome ─▶ B 本机隧道端口 ═══ TLS 1.3 端到端 ═══▶ 中继 ═══▶ A 的 TempRoom ─▶ A 的代理 ─▶ 网站
@@ -46,6 +46,20 @@ scripts/build.sh            # 产出 TempRoom.app 和 TempRoom-mac.zip（Intel +
 ```
 
 应用只做了 ad-hoc 签名。首次打开时右键 → 打开，或执行 `xattr -dr com.apple.quarantine TempRoom.app`。
+
+Windows 需要 Go 1.26+，在 PowerShell 里构建：
+
+```powershell
+git clone https://github.com/edison-land/temproom.git
+cd temproom
+.\scripts\build-windows.ps1            # 产出 dist\TempRoom-windows-amd64.zip（含本地自测用的 temproom-server.exe）
+.\scripts\build-windows.ps1 -Arch arm64
+.\scripts\build-windows.ps1 -Console   # 保留控制台窗口，便于看日志
+```
+
+Windows 版没有签名，首次运行 SmartScreen 会拦一次（更多信息 → 仍要运行）。运行时需要 Google Chrome 和 WebView2 运行时（Windows 11 自带）。
+
+**安装路径要全英文**：WebView2 在内核层不支持非 ASCII 路径，放在 `D:\日常文件\` 这类目录里会启动失败（日志里是 `error creating controller with 800700aa`）。解压到 `C:\TempRoom\` 这类纯英文路径即可。
 
 ### 3. 使用
 
@@ -110,7 +124,7 @@ go test -tags uidev -run UIDev -timeout 0 ./cmd/temproom-app            # 在 :1
 
 | 项 | 现状 |
 |---|---|
-| 平台 | 只支持 macOS 11+。Windows、Linux 客户端尚未支持。 |
+| 平台 | 支持 macOS 11+ 和 Windows 10/11。Linux 客户端尚未支持。 |
 | 浏览器 | 只支持 Google Chrome。Edge、Brave、Firefox、Safari 尚未支持。 |
 | 共享范围 | 只有临时 Chrome 走隧道。整机或其他应用（全局模式）不支持，这是有意的设计。 |
 | 代理类型 | A 端只支持 SOCKS5 / mixed 端口，纯 HTTP 代理端口不支持。 |
@@ -134,7 +148,7 @@ go test -tags uidev -run UIDev -timeout 0 ./cmd/temproom-app            # 在 :1
 - [ ] 多路复用：单条 WebSocket 承载多条流，减少握手和 Worker 请求数。
 - [ ] P2P 直连（NAT 打洞），失败时再回落到中继。
 - [ ] UDP 支持（SOCKS5 UDP ASSOCIATE），用于 QUIC 和 WebRTC。
-- [ ] 更多浏览器（Chromium 系优先）以及 Windows、Linux 客户端。
+- [ ] 更多浏览器（Chromium 系优先）以及 Linux 客户端。
 - [ ] 中继服务器支持 HTTPS 部署模板、持久化或优雅重启，以及 Prometheus 指标。
 - [ ] Worker 部署方式二：在客户端输入一个只有 `Workers Scripts: Edit` 权限的 API Token，自动部署（Token 只存在 macOS 钥匙串）。
 - [ ] Developer ID 签名、公证和自动更新。
