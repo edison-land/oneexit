@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TempRoom</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="window-frame">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-glyph"></span>
+        <span class="brand-title">TempRoom</span>
+      </div>
+      <div class="topbar-status">
+        <span class="status-indicator" id="status-dot"></span>
+        <span class="status-label" id="status-text">Ready</span>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="content">
+      <!-- VIEW 1: Idle / Welcome / Role Selection -->
+      <section id="view-idle" class="view active">
+        <div class="role-switch">
+          <button id="role-tab-requester" class="switch-btn active" onclick="switchRole('REQUESTER')">Share Network</button>
+          <button id="role-tab-operator" class="switch-btn" onclick="switchRole('OPERATOR')">Join Session</button>
+        </div>
+
+        <!-- Requester Panel -->
+        <div id="panel-requester" class="panel active">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Local Proxy</span>
+              <button class="btn-subtle" onclick="refreshProxies()">Scan</button>
+            </div>
+            <div class="proxy-list" id="proxy-list">
+              <div class="proxy-item selected" id="proxy-item-default">
+                <span class="proxy-address">127.0.0.1:7890</span>
+                <span class="proxy-meta" id="proxy-meta-text">Scanning...</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card relay-card">
+            <div class="card-header">
+              <span class="card-title">Relay</span>
+              <span class="relay-state" id="relay-state"><span class="status-indicator ready" id="relay-dot"></span><span id="relay-state-text">Checking…</span></span>
+            </div>
+            <div class="relay-options" role="radiogroup">
+              <button type="button" class="relay-opt" id="relay-opt-public" role="radio" onclick="chooseRelay('public')"><span class="relay-radio"></span>Default Relay</button>
+              <button type="button" class="relay-opt" id="relay-opt-custom" role="radio" onclick="chooseRelay('custom')"><span class="relay-radio"></span>My Cloudflare Worker</button>
+            </div>
+            <input type="text" id="input-worker-url" class="text-input relay-input hidden" placeholder="https://your-relay.workers.dev" autocomplete="off" spellcheck="false" />
+          </div>
+
+          <div class="action-footer">
+            <button class="btn-primary" onclick="createRoom()">Create Room</button>
+          </div>
+        </div>
+
+        <!-- Operator Panel -->
+        <div id="panel-operator" class="panel">
+          <div class="card">
+            <label class="input-label" for="input-room-key">Invite Code</label>
+            <input type="text" id="input-room-key" class="text-input key-input invite-input" placeholder="Paste the full invite code" maxlength="200" autocomplete="off" spellcheck="false" />
+            <span class="hint-text">The host's invite contains the encryption secret. Paste all of it.</span>
+          </div>
+
+          <div class="action-footer">
+            <button class="btn-primary" onclick="joinRoom()">Join Room</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: In Session (Requester / Operator) -->
+      <section id="view-session" class="view">
+        <div class="key-card">
+          <span class="key-label">ROOM KEY</span>
+          <div class="key-value-wrap" id="key-wrap" onclick="copyInvite()">
+            <span class="key-value" id="display-room-key">----</span>
+            <span class="copy-badge" id="copy-badge">Copy invite</span>
+          </div>
+          <span class="hint-text" id="key-hint"></span>
+        </div>
+
+        <!-- Waiting (host waiting for partner / partner waiting for approval) -->
+        <div id="waiting-card" class="card waiting-card hidden">
+          <div class="waiting-header">
+            <span class="pulsing-dot"></span>
+            <span class="waiting-title" id="waiting-title">Waiting for partner</span>
+          </div>
+          <div class="waiting-meta">
+            <span class="waiting-desc" id="waiting-desc">Send the full invite code to your partner.</span>
+          </div>
+        </div>
+
+        <!-- Host: sharing status -->
+        <div id="peer-active-card" class="card peer-active-card hidden">
+          <div class="peer-header">
+            <span class="status-indicator" id="peer-dot"></span>
+            <span class="peer-title" id="peer-title">Partner approved</span>
+          </div>
+          <span class="peer-desc" id="peer-desc"></span>
+        </div>
+
+        <!-- Network & Tunnel Metrics -->
+        <div class="card metrics-card">
+          <div class="metric-row">
+            <span class="metric-name" id="metric-exit-label">Network Exit</span>
+            <span class="metric-val" id="metric-exit-ip">—</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">Encrypted Tunnel</span>
+            <span class="metric-val" id="metric-tunnel">Not started</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">Relay</span>
+            <span class="metric-val" id="metric-relay">Default</span>
+          </div>
+          <div class="metric-row" id="metric-row-camera">
+            <span class="metric-name">Camera</span>
+            <span class="metric-val" id="metric-camera">Detecting...</span>
+          </div>
+        </div>
+
+        <div id="net-note" class="net-note hidden"></div>
+
+        <!-- Operator: isolated browser -->
+        <div id="operator-tools" class="card hidden">
+          <div class="browser-ctrl">
+            <div class="browser-info">
+              <span class="browser-title">Temporary Chrome</span>
+              <span class="browser-status" id="chrome-status-text">Waiting for verified network</span>
+            </div>
+            <button id="btn-chrome" class="btn-secondary" onclick="toggleChrome()" disabled>Launch Chrome</button>
+          </div>
+        </div>
+
+        <div class="action-footer session-footer">
+          <button class="btn-danger" onclick="leaveRoom()">End Session</button>
+        </div>
+      </section>
+
+      <!-- VIEW 3: Session ended -->
+      <section id="view-cleanup" class="view">
+        <div class="card cleanup-card">
+          <span class="card-title">Session Ended</span>
+          <span class="hint-text" id="end-reason"></span>
+          <div class="cleanup-steps" id="cleanup-steps"></div>
+        </div>
+        <div class="action-footer">
+          <button class="btn-primary" onclick="resetToIdle()">New Session</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal: join request -->
+    <div id="approval-modal" class="modal-backdrop hidden">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div class="modal-pulse-icon"></div>
+          <span class="modal-title">Join Request</span>
+        </div>
+        <div class="modal-body">
+          <p class="modal-text">Someone used your invite and wants to browse through your proxy. Approve only if this is the person you sent it to.</p>
+          <div class="modal-meta-box">
+            <span class="meta-label">They get</span>
+            <span class="meta-val" id="modal-scope">Your proxy exit, nothing else on this Mac</span>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-secondary" onclick="rejectJoin()">Decline &amp; close room</button>
+          <button class="btn-accent" onclick="approveJoin()">Approve</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

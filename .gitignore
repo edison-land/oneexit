@@ -1,0 +1,9 @@
+# build outputs
+bin/
+*.app/
+*.zip
+# local tooling
+.DS_Store
+worker/.wrangler/
+worker/node_modules/
+.dev.vars

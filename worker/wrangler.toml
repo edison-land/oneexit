@@ -1,0 +1,19 @@
+# TempRoom private relay. Deploy with: npx wrangler deploy
+name = "temproom-relay"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+# No request logs or traces are collected by this Worker.
+[observability]
+enabled = false
+
+# One in-memory Durable Object per room. Storage is never used; the SQLite
+# class type is only what Cloudflare's free plan requires for Durable Objects.
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]

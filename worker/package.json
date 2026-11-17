@@ -1,0 +1,9 @@
+{
+  "name": "temproom-relay",
+  "private": true,
+  "description": "TempRoom private relay for Cloudflare Workers (in-memory, no storage, no logs)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  }
+}
