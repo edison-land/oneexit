@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    try {
+      document.querySelector('meta[name="color-scheme"]').content =
+        localStorage.getItem('color-scheme') ?? 'light dark';
+    } catch {}
+  </script>
+  <title>TempRoom — 借朋友用一次网络，不用交出你的 VPN</title>
+  <meta name="description" content="让朋友或队友在他的 Mac 上弹出一个临时 Chrome 窗口走你的海外网络——不用发订阅链接、不暴露你的桌面，他的微信与本机摄像头照常使用。">
+  <link rel="alternate" hreflang="en" href="https://temproom.pages.dev/">
+  <link rel="alternate" hreflang="zh-CN" href="https://temproom.pages.dev/zh/">
+  <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM Context">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://temproom.pages.dev/zh/">
+  <meta property="og:title" content="TempRoom — 借朋友用一次网络，不用交出你的 VPN">
+  <meta property="og:description" content="对方电脑只开一个临时 Chrome 窗口走你的 IP；他的微信、Safari 和本机摄像头照走本地网络，用完一键收回并自动清空痕迹。">
+  <meta property="og:image" content="https://temproom.pages.dev/og-card-zh.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TempRoom — 借朋友用一次网络，不用交出你的 VPN">
+  <meta name="twitter:description" content="只借出 1 个临时 Chrome 窗口，不泄订阅、不露屏幕，用完即焚。">
+  <meta name="twitter:image" content="https://temproom.pages.dev/og-card-zh.png">
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111318'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%235e6ad2'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="glow" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="/zh/" class="wordmark">
+        <span class="dot" aria-hidden="true"></span>
+        <span>TempRoom</span>
+      </a>
+      <div class="topbar-right">
+        <nav class="nav" aria-label="主导航">
+          <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/temproom/tree/main/worker" target="_blank" rel="noopener">私有部署</a>
+          <a href="https://github.com/edison-land/temproom/releases/tag/v2.1.0" target="_blank" rel="noopener">v2.1.0</a>
+          <a href="https://github.com/edison-land/temproom" target="_blank" rel="noopener">GitHub</a>
+        </nav>
+        <a href="/" lang="en" hreflang="en" class="lang-switch">EN</a>
+        <button type="button" class="theme-toggle" id="themeToggle">
+          <span class="theme-opt if-dark">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+            <span class="sr-only">切换到白天模式</span>
+          </span>
+          <span class="theme-opt if-light">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+            </svg>
+            <span class="sr-only">切换到黑夜模式</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <!-- Hero -->
+    <section class="hero">
+      <h1>借朋友用一次你的网络，不用交出 VPN 密码。</h1>
+      <p class="hero-lead">对方电脑上只打开一个临时 Chrome 窗口走你的海外 IP——他的微信、Safari 和本机摄像头照走本地网络，用完自动清空。</p>
+
+      <div class="actions">
+        <a href="../TempRoom-mac.zip" class="btn-primary" download>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>下载 macOS 版（免登录即用）</span>
+        </a>
+        <a href="https://github.com/edison-land/temproom" target="_blank" rel="noopener" class="btn-secondary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.8 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14 0 1.55-.01 2.8-.01 3.18 0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/>
+          </svg>
+          <span>GitHub 开源 · 零配置</span>
+        </a>
+      </div>
+
+      <div class="cli-pill">
+        <code class="mono" id="quarantine-cmd">xattr -dr com.apple.quarantine TempRoom.app</code>
+        <span class="copy">
+          <button type="button" class="copy-button" command="--copy" commandfor="quarantine-cmd" aria-label="复制首次打开命令">
+            <span class="icon icon-copy" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </span>
+            <span class="icon icon-check" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </span>
+          </button>
+          <span class="tip" role="status"></span>
+        </span>
+      </div>
+    </section>
+
+    <!-- Live 1.2s Kinetic Story Stage -->
+    <div class="stage-frame">
+      <div class="stage-bar">
+        <div class="step-group" role="group" aria-label="使用步骤">
+          <button type="button" class="step active" data-step="1" aria-pressed="true">
+            <span class="mono">01</span><span>发房间码</span>
+            <i class="step-fill" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="step" data-step="2" aria-pressed="false">
+            <span class="mono">02</span><span>你点批准</span>
+            <i class="step-fill" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="step" data-step="3" aria-pressed="false">
+            <span class="mono">03</span><span>朋友上网</span>
+            <i class="step-fill" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="step" data-step="4" aria-pressed="false">
+            <span class="mono">04</span><span>自动销毁</span>
+            <i class="step-fill" aria-hidden="true"></i>
+          </button>
+        </div>
+        <button type="button" class="play-toggle" id="playToggle" aria-label="暂停动画">
+          <svg class="ic-pause" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+            <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+          </svg>
+          <svg class="ic-play" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <polygon points="6,4 20,12 6,20"></polygon>
+          </svg>
+        </button>
+      </div>
+
+      <div class="stage-grid" id="liveStage">
+        <!-- Host Mac -->
+        <div class="win active" id="nodeA">
+          <div class="win-bar">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <span class="win-title">你的 Mac · 开着 Clash / 代理</span>
+            <span class="state-pill" id="badgeA">就绪</span>
+          </div>
+          <div class="win-body">
+            <button type="button" class="invite-card" id="keyBoxA" aria-label="复制示例房间码">
+              <span class="invite-label">一次性房间码（点击复制）</span>
+              <span class="invite-code mono" id="displayKey">PJWA-RY2P</span>
+            </button>
+
+            <div class="kv-stack">
+              <div class="kv">
+                <span>借给朋友的权限</span>
+                <strong class="ok">仅本次网页出口</strong>
+              </div>
+              <div class="kv">
+                <span>你的订阅链接与电脑屏幕</span>
+                <strong class="dim">绝不共享</strong>
+              </div>
+            </div>
+
+            <!-- Approval Sheet (Beat 2) -->
+            <div class="sheet" id="modalA" aria-hidden="true">
+              <div class="sheet-card">
+                <div class="sheet-top">
+                  <span class="amber-dot" aria-hidden="true"></span>
+                  <span>朋友请求借用你的网络出口</span>
+                </div>
+                <div class="sheet-btns">
+                  <span class="s-btn s-decline">拒绝</span>
+                  <span class="s-btn s-approve" id="approveBtn">批准接入</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Encrypted Bridge -->
+        <div class="conduit">
+          <div class="wire" aria-hidden="true">
+            <div class="wire-glow" id="beamGlow"></div>
+            <span class="pkt p1" id="p1"></span>
+            <span class="pkt p2" id="p2"></span>
+            <span class="pkt p3" id="p3"></span>
+          </div>
+          <div class="relay-box" id="hubNode">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span class="relay-name">端到端加密通道</span>
+            <span class="relay-meta" id="tunnelStatusText">免登录自动拉起</span>
+          </div>
+        </div>
+
+        <!-- Friend's Mac -->
+        <div class="win" id="nodeB">
+          <div class="win-bar">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <span class="win-title">朋友的 Mac · 临时借用 15 分钟</span>
+            <span class="state-pill" id="badgeB">等待中</span>
+          </div>
+          <div class="win-body">
+            <!-- App Slot 1: Temporary Chrome -->
+            <div class="app-slot" id="chromeSlot">
+              <div class="slot-head">
+                <span class="slot-name">1 个临时 Chrome 窗口</span>
+                <span class="mono slot-state" id="chromeStatusB">已锁定</span>
+              </div>
+              <div class="chrome-live">
+                <span class="url-pill mono" id="chromeBar">chatgpt.com · stripe.com</span>
+                <span class="exit-readout" id="chromeReadout">粘贴房间码</span>
+              </div>
+              <div class="laser" aria-hidden="true"></div>
+            </div>
+
+            <!-- App Slot 2: Everything else on Friend's Mac -->
+            <div class="kv-stack">
+              <div class="kv">
+                <span>朋友的微信与本地软件</span>
+                <strong class="dim">照走本地 Wi-Fi</strong>
+              </div>
+              <div class="kv">
+                <span>朋友本机的摄像头</span>
+                <strong>原生正常调用</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 Concrete Real-World Scenarios -->
+    <div class="scenarios">
+      <article class="scen-card">
+        <div class="scen-visual" aria-hidden="true">
+          <span class="v-box bad-box">网页打不开</span>
+          <span class="v-arrow">→</span>
+          <span class="v-box ok-box">走你的海外 IP 打开</span>
+        </div>
+        <h2>帮队友或朋友临时救急 15 分钟</h2>
+        <p>合伙人、同事或客户卡在 ChatGPT、Stripe 或海外后台打不开？发个一次性房间码就能进，不用把你的机场订阅送出去。</p>
+      </article>
+
+      <article class="scen-card">
+        <div class="scen-visual" aria-hidden="true">
+          <span class="v-box">你的海外 IP 🌍</span>
+          <span class="v-arrow">+</span>
+          <span class="v-box ok-box">他本机的摄像头 📷</span>
+        </div>
+        <h2>异地完成人脸或身份验证</h2>
+        <p>开远程桌面不仅卡成幻灯片，网页也调不了对方电脑上的摄像头。TempRoom 直接在他电脑上开独立 Chrome，同时用上你的 IP 和他的硬件。</p>
+      </article>
+
+      <article class="scen-card">
+        <div class="scen-visual" aria-hidden="true">
+          <span class="v-box">点击停止</span>
+          <span class="v-arrow">→</span>
+          <span class="v-box cut-box">关闭窗口并擦除痕迹</span>
+        </div>
+        <h2>随时一键收回，断网绝不漏真实 IP</h2>
+        <p>用完点停止，对方的临时窗口立刻关闭并清空所有 Cookie 与浏览记录；中途网络断开也会立即停摆，绝不会偷偷回落到他的本地宽带。</p>
+      </article>
+    </div>
+
+    <!-- Plain-Language Comparison Table -->
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <caption class="sr-only">临时借用网络 15 分钟的不同方式对比</caption>
+        <thead>
+          <tr>
+            <th scope="col">当朋友临时需要借你的网络用 15 分钟</th>
+            <th scope="col">发 VPN 订阅链接</th>
+            <th scope="col">开远程桌面</th>
+            <th scope="col">装全局组网 VPN</th>
+            <th scope="col" class="col-tr">TempRoom</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">你的 VPN 账号与订阅链接</th>
+            <td class="bad">等于永久送人</td>
+            <td class="dim">保密</td>
+            <td class="bad">需交出配置</td>
+            <td class="col-tr ok">始终保密</td>
+          </tr>
+          <tr>
+            <th scope="row">你的电脑屏幕与聊天隐私</th>
+            <td class="dim">私密</td>
+            <td class="bad">全程被围观</td>
+            <td class="dim">私密</td>
+            <td class="col-tr ok">完全私密</td>
+          </tr>
+          <tr>
+            <th scope="row">朋友的微信与本地软件</th>
+            <td class="warn">全被接管改路由</td>
+            <td class="dim">正常</td>
+            <td class="bad">全被接管改路由</td>
+            <td class="col-tr ok">照走本地 Wi-Fi</td>
+          </tr>
+          <tr>
+            <th scope="row">调用朋友本机的摄像头</th>
+            <td class="dim">可以</td>
+            <td class="bad">无法调用</td>
+            <td class="dim">可以</td>
+            <td class="col-tr ok">原生正常调用</td>
+          </tr>
+          <tr>
+            <th scope="row">15 分钟用完后收回权限</th>
+            <td class="bad">根本收不回来</td>
+            <td class="warn">挂断远控</td>
+            <td class="warn">需手动卸载</td>
+            <td class="col-tr ok">一键关闭并擦除</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="footer-brand">TempRoom · 免费开源 (MIT)</span>
+      <div class="footer-links">
+        <a href="https://github.com/edison-land/temproom" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/edison-land/temproom/releases/tag/v2.1.0" target="_blank" rel="noopener">版本下载</a>
+        <a href="https://github.com/edison-land/temproom/blob/main/LICENSE" target="_blank" rel="noopener">MIT 协议</a>
+        <a href="/llms.txt">llms.txt</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js"></script>
+</body>
+</html>

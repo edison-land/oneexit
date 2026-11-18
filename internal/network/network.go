@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"io"
 	"net"
@@ -22,9 +23,13 @@ type Resolver struct {
 }
 
 func NewResolver() *Resolver {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256}}
+	tr.ForceAttemptHTTP2 = true
 	return &Resolver{
 		client: &http.Client{
-			Timeout: 4 * time.Second,
+			Transport: tr,
+			Timeout:   4 * time.Second,
 		},
 	}
 }

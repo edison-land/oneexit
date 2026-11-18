@@ -1,0 +1,28 @@
+# TempRoom (v2.1)
+
+> Share your Mac's proxy exit with one person, for one session, inside one disposable Chrome window.
+
+## Architecture
+- **Zero-Login Instant Relay**: Out of the box, creating a room spins up an in-process loopback hub (`127.0.0.1:0`) exposed via a disposable Cloudflare Quick Tunnel (`*.trycloudflare.com`) that is torn down the moment the session ends. Hosts can optionally switch to a self-hosted Cloudflare Worker (`My Worker`).
+- **Host (Mac A)**: Shares only a chosen local SOCKS5/mixed proxy port (e.g. `127.0.0.1:7890`). LAN, SSH, and other local ports are unreachable.
+- **Partner (Mac B)**: Runs no root daemon, no TUN extension, and no system proxy change. Only the isolated Chrome instance (`--user-data-dir=/tmp/temproom-chrome-*`) routes through the tunnel.
+- **End-to-End Encryption**: Invite format is `XXXX-XXXX-<26-char-base32-secret>@<worker-host>`. The 128-bit secret is never sent to the relay; HKDF-SHA256 derives a pinned Ed25519 TLS 1.3 keypair and RFC 5705 session proof. The relay sees opaque ciphertext frames only.
+- **Fail-Closed**: Chrome is blocked until tunnel exit IP verification succeeds. Flags enforce `--host-resolver-rules=MAP * ~NOTFOUND` (remote DNS only) and `--force-webrtc-ip-handling-policy=disable_non_proxied_udp`.
+- **Teardown**: Ending a session, quitting, or losing heartbeat for 45s cuts all streams, kills Chrome (`pkill -9`), and deletes `/tmp/temproom-chrome-*`.
+
+## Links
+- Website: https://temproom.pages.dev/
+- macOS Universal App (v2.1.0): https://github.com/edison-land/temproom/releases/download/v2.1.0/TempRoom-mac.zip
+- Direct Edge Mirror: https://temproom.pages.dev/TempRoom-mac.zip
+- 1-Click Cloudflare Worker Deploy: https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/temproom/tree/main/worker
+- Source (MIT): https://github.com/edison-land/temproom
+
+## Quick Commands
+```bash
+# First launch on macOS (ad-hoc signed bundle)
+xattr -dr com.apple.quarantine TempRoom.app
+
+# Build from source (requires Go 1.26+, macOS 11+)
+git clone https://github.com/edison-land/temproom.git
+cd temproom && scripts/build.sh
+```

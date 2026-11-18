@@ -4,6 +4,8 @@
 
 TempRoom 让你把本机代理（Clash / mihomo 等的 SOCKS5/mixed 端口）的出口，临时借给另一台 Mac 上的伙伴使用。伙伴只能在 TempRoom 打开的临时 Chrome 里用；全程端到端加密，你随时可以一键收回。
 
+🌐 **在线演示与官网**：[temproom.pages.dev](https://temproom.pages.dev/)（[中文版](https://temproom.pages.dev/zh/)） · 📦 **macOS 客户端下载**：[GitHub Release v2.1.0](https://github.com/edison-land/temproom/releases/tag/v2.1.0)
+
 ```
 伙伴 B 的临时 Chrome ─▶ B 本机隧道端口 ═══ TLS 1.3 端到端 ═══▶ 中继 ═══▶ A 的 TempRoom ─▶ A 的代理 ─▶ 网站
                                          (中继只看到密文)
@@ -19,21 +21,23 @@ TempRoom 让你把本机代理（Clash / mihomo 等的 SOCKS5/mixed 端口）的
 - **端到端加密**：邀请码里带着一段 secret，由它派生 TLS 1.3 密钥和身份校验。中继只看到密文，只拿到房间码的人也加入不了。
 - **需要批准**：B 加入后，A 要点 Approve 才会开始共享。每个房间只允许一个伙伴。
 - **用完即焚**：任一方结束、断线 45 秒，或超出有效期，都会撤销访问，关闭临时 Chrome 并删除它的配置目录。
-- **两种中继可选**：
-  - 自己部署的 **Cloudflare Worker**（一键部署；只在内存中运行，不存储、不记日志）。
+- **三种中继模式（默认免登录即开即用）**：
+  - **Instant Tunnel（默认）**：客户端自动在本地拉起内存 Hub 并创建一次性 `*.trycloudflare.com` 临时隧道，无需注册登录，会话结束即刻销毁。
+  - **My Worker（可选）**：自己一键部署到 **Cloudflare Worker**（固定自定义域名，只在内存中运行，不存储、不记日志）。
   - 自建的 **temproom-server**。
-  - 伙伴不需要任何账户或配置：邀请码里已经带着中继地址。
+  - 伙伴 B 不需要任何账户或配置：邀请码里已经带着中继地址。
 
 ## 快速开始
 
-### 1. 准备中继（二选一，房主 A 做一次即可）
+### 1. 直接使用（零配置，免登录）
 
-- **Cloudflare Worker（推荐）**：
+下载 `TempRoom-mac.zip` 解压打开，保持默认的 **Instant Tunnel** 即可直接建房；首次建房若本机未装 `cloudflared`，客户端会自动下载到应用缓存目录。
 
-  [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/temproom/tree/main/worker)
-
-  说明见 [`worker/README.md`](worker/README.md)。**中国大陆需要绑定自定义域名**，因为 `*.workers.dev` 通常无法访问。
-- **自建服务器**：见 [`docs/DEPLOY.md`](docs/DEPLOY.md)。
+> **可选进阶（中国大陆直连更稳）**：如果你希望绑定自己的域名长期使用，可一键部署到自己的 Cloudflare Worker 并在客户端切换到 `My Worker`：
+>
+> [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/temproom/tree/main/worker)
+>
+> 说明见 [`worker/README.md`](worker/README.md)。自建服务器见 [`docs/DEPLOY.md`](docs/DEPLOY.md)。
 
 ### 2. 构建
 
@@ -52,7 +56,7 @@ scripts/build.sh            # 产出 TempRoom.app 和 TempRoom-mac.zip（Intel +
 | 房主 A（有代理的一方） | 伙伴 B |
 |---|---|
 | Share Network → 选择本地代理端口 | |
-| Relay → My Cloudflare Worker → 填地址并回车（看到绿点） | |
+| Relay 默认选中 `Instant Tunnel`（免登录即用；也可切到 `My Worker`） | |
 | Create Room → Copy invite，发给 B | |
 | | Join Session → 粘贴完整邀请码 → Join |
 | 弹出 Join Request → Approve | |
@@ -117,12 +121,12 @@ go test -tags uidev -run UIDev -timeout 0 ./cmd/temproom-app            # 在 :1
 | UDP / QUIC | 不支持，只走 TCP。WebRTC 音视频只能用 TCP，通话质量可能下降。 |
 | 伙伴数量 | 每个房间只允许一个伙伴。 |
 | 直连 | 所有流量都经中继转发，暂无 P2P 打洞直连，速度受中继带宽限制。 |
-| 默认中继 | 开源构建不内置公共中继，需要自部署 Worker 或服务器。 |
+| 默认中继 | 开源构建不内置任何共享公共服务器；默认每次会话按需拉起一次性 `*.trycloudflare.com` 临时隧道（也可切换自部署 Worker）。 |
 | 中继服务器 | 状态只在内存中，重启会结束所有房间；没有限速、配额和监控。 |
 | 信令 | temproom-server 示例使用 HTTP。数据面已端到端加密，但令牌可能在链路上被嗅探，最坏情况是被关房或拒绝服务。建议配置 HTTPS。 |
 | Worker | 只在本地 workerd（`wrangler dev`）验证过，尚未在 Cloudflare 线上大规模验证。没有背压，大流量下载可能让 Durable Object 内存积压。免费额度有限。 |
 | 签名 | 只有 ad-hoc 签名，没有 Developer ID 签名和公证。 |
-| 界面语言 | 只有英文。 |
+| 界面语言 | 支持中英双语（按系统语言自动识别，顶部可一键切换 `中文 / EN`）。 |
 | 兼容性 | 带 `@中继` 的邀请码需要 v2.1+；旧版本会提示“邀请码不完整”。 |
 
 ## Future work

@@ -29,8 +29,18 @@ func WSBase(serverURL string) string {
 	return "ws://" + strings.TrimPrefix(u, "http://")
 }
 
+// wsHTTPClient disables Go 1.24+'s X25519MLKEM768 multi-segment ClientHello so
+// TUN/Fake-IP and SNI middleboxes do not reset wss:// handshakes to Cloudflare.
+var wsHTTPClient = func() *http.Client {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256}}
+	tr.ForceAttemptHTTP2 = false
+	return &http.Client{Transport: tr}
+}()
+
 func dialWS(ctx context.Context, rawURL, token string) (*websocket.Conn, error) {
 	c, _, err := websocket.Dial(ctx, rawURL, &websocket.DialOptions{
+		HTTPClient: wsHTTPClient,
 		HTTPHeader: http.Header{"Authorization": []string{"Bearer " + token}},
 	})
 	if err != nil {

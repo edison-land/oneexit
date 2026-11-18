@@ -19,10 +19,14 @@ import (
 )
 
 func TestUIDev(t *testing.T) {
-	srv := server.NewServer()
-	remote := httptest.NewServer(srv.Routes())
-	defer remote.Close()
-	t.Setenv("TEMPROOM_SERVER_URL", remote.URL)
+	if os.Getenv("UIDEV_QUICK") != "" {
+		t.Setenv("TEMPROOM_SERVER_URL", "")
+	} else {
+		srv := server.NewServer()
+		remote := httptest.NewServer(srv.Routes())
+		defer remote.Close()
+		t.Setenv("TEMPROOM_SERVER_URL", remote.URL)
+	}
 	sub, _ := fs.Sub(distFS, "dist")
 	files := http.FileServer(http.FS(sub))
 	for i, addr := range []string{"127.0.0.1:18081", "127.0.0.1:18082"} {

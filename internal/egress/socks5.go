@@ -2,6 +2,7 @@ package egress
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -122,6 +123,7 @@ func (p *SOCKS5Probe) fetchExitIP(ctx context.Context, proxyAddr string) (string
 		Proxy:               http.ProxyURL(proxyURL),
 		DialContext:         (&net.Dialer{Timeout: p.Timeout}).DialContext,
 		TLSHandshakeTimeout: p.Timeout,
+		TLSClientConfig:     &tls.Config{CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256}},
 		DisableKeepAlives:   true,
 	}
 	defer transport.CloseIdleConnections()

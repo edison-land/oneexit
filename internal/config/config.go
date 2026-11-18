@@ -14,6 +14,7 @@ import (
 
 const (
 	RelayPublic = "public"
+	RelayQuick  = "quick"
 	RelayCustom = "custom"
 )
 
@@ -45,7 +46,7 @@ func Load(dir string) Config {
 	if err != nil || json.Unmarshal(data, &c) != nil {
 		return Config{RelayMode: RelayPublic}
 	}
-	if c.RelayMode != RelayCustom {
+	if c.RelayMode != RelayCustom && c.RelayMode != RelayQuick {
 		c.RelayMode = RelayPublic
 	}
 	if u, err := NormalizeRelayURL(c.CustomWorkerURL); err == nil {
@@ -53,7 +54,7 @@ func Load(dir string) Config {
 	} else {
 		c.CustomWorkerURL = ""
 	}
-	if c.CustomWorkerURL == "" {
+	if c.RelayMode == RelayCustom && c.CustomWorkerURL == "" {
 		c.RelayMode = RelayPublic
 	}
 	return c

@@ -3,459 +3,340 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TempRoom — Temporary Egress Sharing for macOS</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    try {
+      document.querySelector('meta[name="color-scheme"]').content =
+        localStorage.getItem('color-scheme') ?? 'light dark';
+    } catch {}
+  </script>
+  <title>TempRoom — Lend Your Network for One Task</title>
+  <meta name="description" content="Let a friend or teammate borrow your Mac's overseas network inside one temporary Chrome window—without sharing your VPN password or your screen.">
+  <link rel="alternate" hreflang="en" href="https://temproom.pages.dev/">
+  <link rel="alternate" hreflang="zh-CN" href="https://temproom.pages.dev/zh/">
+  <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM Context">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://temproom.pages.dev/">
+  <meta property="og:title" content="TempRoom — Lend Your Network for One Task">
+  <meta property="og:description" content="Your friend gets one temporary Chrome window using your IP—while their WeChat, Safari, and camera stay on their own Mac.">
+  <meta property="og:image" content="https://temproom.pages.dev/og-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TempRoom — Lend Your Network for One Task">
+  <meta name="twitter:description" content="Lend your Mac's proxy exit in one temporary Chrome window. Keep your VPN password private.">
+  <meta name="twitter:image" content="https://temproom.pages.dev/og-card.png">
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111318'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%235e6ad2'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Ambient Grid Background -->
-  <div class="ambient-glow" aria-hidden="true"></div>
-  <div class="grid-overlay" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
 
-  <!-- Header -->
-  <header class="navbar">
-    <div class="nav-content">
-      <div class="brand">
-        <span class="brand-dot"></span>
-        <span class="brand-name">TempRoom</span>
-        <span class="version-tag">v2.0</span>
-      </div>
-      <div class="nav-status">
-        <span class="pulse-indicator"></span>
-        <span class="status-text">Cloud Relay Online</span>
-      </div>
-      <div class="nav-action">
-        <a href="#download" class="btn-nav">Get App</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="/" class="wordmark">
+        <span class="dot" aria-hidden="true"></span>
+        <span>TempRoom</span>
+      </a>
+      <div class="topbar-right">
+        <nav class="nav" aria-label="Primary">
+          <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/temproom/tree/main/worker" target="_blank" rel="noopener">Private Cloud</a>
+          <a href="https://github.com/edison-land/temproom/releases/tag/v2.1.0" target="_blank" rel="noopener">v2.1.0</a>
+          <a href="https://github.com/edison-land/temproom" target="_blank" rel="noopener">GitHub</a>
+        </nav>
+        <a href="/zh/" lang="zh-CN" hreflang="zh-CN" class="lang-switch">中文</a>
+        <button type="button" class="theme-toggle" id="themeToggle">
+          <span class="theme-opt if-dark">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+            <span class="sr-only">Switch to light theme</span>
+          </span>
+          <span class="theme-opt if-light">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+            </svg>
+            <span class="sr-only">Switch to dark theme</span>
+          </span>
+        </button>
       </div>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <main class="hero-container">
-    <div class="hero-title-wrap">
-      <h1 class="hero-title">Share Your Proxy Egress.</h1>
-      <p class="hero-sub">Cross-city encrypted tunnel. Sandboxed Chrome. Zero credentials.</p>
-    </div>
+  <main class="page">
+    <!-- Hero -->
+    <section class="hero">
+      <h1>Lend your network for one task. Keep your VPN private.</h1>
+      <p class="hero-lead">Your friend gets one temporary Chrome window using your IP—while their WeChat, Safari, and camera stay on their own Mac.</p>
 
-    <!-- Interactive Dual-Mac Stage (能用图示就不要用文字) -->
-    <div class="stage-wrapper">
-      <!-- Step Controls -->
-      <div class="stage-nav">
-        <button class="stage-step active" data-step="1">
-          <span class="step-num">01</span>
-          <span class="step-label">Generate Room</span>
-        </button>
-        <button class="stage-step" data-step="2">
-          <span class="step-num">02</span>
-          <span class="step-label">Authorize Peer</span>
-        </button>
-        <button class="stage-step" data-step="3">
-          <span class="step-num">03</span>
-          <span class="step-label">Active Egress</span>
-        </button>
-        <button class="stage-step" data-step="4">
-          <span class="step-num">04</span>
-          <span class="step-label">Instant Shred</span>
+      <div class="actions">
+        <a href="TempRoom-mac.zip" class="btn-primary" download>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download for macOS</span>
+        </a>
+        <a href="https://github.com/edison-land/temproom" target="_blank" rel="noopener" class="btn-secondary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.8 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14 0 1.55-.01 2.8-.01 3.18 0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/>
+          </svg>
+          <span>Open Source · No Login</span>
+        </a>
+      </div>
+
+      <div class="cli-pill">
+        <code class="mono" id="quarantine-cmd">xattr -dr com.apple.quarantine TempRoom.app</code>
+        <span class="copy">
+          <button type="button" class="copy-button" command="--copy" commandfor="quarantine-cmd" aria-label="Copy first-open command">
+            <span class="icon icon-copy" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </span>
+            <span class="icon icon-check" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </span>
+          </button>
+          <span class="tip" role="status"></span>
+        </span>
+      </div>
+    </section>
+
+    <!-- Live 1.2s Kinetic Story Stage -->
+    <div class="stage-frame">
+      <div class="stage-bar">
+        <div class="step-group" role="group" aria-label="Steps">
+          <button type="button" class="step active" data-step="1" aria-pressed="true">
+            <span class="mono">01</span><span>Send Code</span>
+            <i class="step-fill" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="step" data-step="2" aria-pressed="false">
+            <span class="mono">02</span><span>You Approve</span>
+            <i class="step-fill" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="step" data-step="3" aria-pressed="false">
+            <span class="mono">03</span><span>Friend Browses</span>
+            <i class="step-fill" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="step" data-step="4" aria-pressed="false">
+            <span class="mono">04</span><span>Auto-Erase</span>
+            <i class="step-fill" aria-hidden="true"></i>
+          </button>
+        </div>
+        <button type="button" class="play-toggle" id="playToggle" aria-label="Pause">
+          <svg class="ic-pause" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+            <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+          </svg>
+          <svg class="ic-play" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <polygon points="6,4 20,12 6,20"></polygon>
+          </svg>
         </button>
       </div>
 
-      <!-- The Live Interactive Network Visualizer -->
-      <div class="interactive-stage" id="liveStage">
-        <!-- Node A: Provider Mac -->
-        <div class="mac-node" id="nodeA">
-          <div class="node-header">
-            <div class="mac-dots"><span></span><span></span><span></span></div>
-            <span class="node-role-badge">Machine A (Provider)</span>
+      <div class="stage-grid" id="liveStage">
+        <!-- Host Mac -->
+        <div class="win active" id="nodeA">
+          <div class="win-bar">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <span class="win-title">Your Mac · Has Clash / VPN</span>
+            <span class="state-pill" id="badgeA">Ready</span>
           </div>
-          <div class="node-window-body">
-            <div class="app-ui-mini">
-              <div class="mini-topbar">
-                <span class="mini-app-name">TempRoom</span>
-                <span class="mini-badge" id="badgeA">READY</span>
+          <div class="win-body">
+            <button type="button" class="invite-card" id="keyBoxA" aria-label="Copy sample invite code">
+              <span class="invite-label">One-Time Room Code</span>
+              <span class="invite-code mono" id="displayKey">PJWA-RY2P</span>
+            </button>
+
+            <div class="kv-stack">
+              <div class="kv">
+                <span>What friend borrows</span>
+                <strong class="ok">Only your network exit</strong>
               </div>
-              <div class="mini-card key-box" id="keyBoxA">
-                <span class="mini-card-title">ROOM KEY</span>
-                <span class="key-code" id="displayKey">PJWA-RY2P</span>
-              </div>
-              <div class="mini-meta-row">
-                <span class="meta-label">Local SOCKS5</span>
-                <span class="meta-val mono">127.0.0.1:7890</span>
-              </div>
-              <div class="mini-meta-row">
-                <span class="meta-label">Egress IP</span>
-                <span class="meta-val mono text-accent" id="ipA">203.0.113.7</span>
+              <div class="kv">
+                <span>Your VPN password &amp; screen</span>
+                <strong class="dim">Never shared</strong>
               </div>
             </div>
 
-            <!-- Modal Overlay for Step 2 -->
-            <div class="mini-modal-overlay hidden" id="modalA">
-              <div class="mini-modal">
-                <span class="modal-dot"></span>
-                <div class="modal-text-group">
-                  <span class="modal-title">Peer Requesting Access</span>
-                  <span class="modal-sub">MacBook Air (City B)</span>
+            <!-- Approval Sheet (Beat 2) -->
+            <div class="sheet" id="modalA" aria-hidden="true">
+              <div class="sheet-card">
+                <div class="sheet-top">
+                  <span class="amber-dot" aria-hidden="true"></span>
+                  <span>Friend wants to borrow your network</span>
                 </div>
-                <div class="modal-btn-row">
-                  <span class="btn-micro-deny">Deny</span>
-                  <span class="btn-micro-allow">Authorize</span>
+                <div class="sheet-btns">
+                  <span class="s-btn s-decline">Decline</span>
+                  <span class="s-btn s-approve" id="approveBtn">Approve</span>
                 </div>
               </div>
             </div>
           </div>
-          <div class="node-caption">Your Mac with Proxy Running</div>
         </div>
 
-        <!-- Center Relay Pipeline -->
-        <div class="relay-pipeline" id="relayPipeline">
-          <div class="relay-beam">
-            <div class="beam-glow" id="beamGlow"></div>
-            <div class="packet-particle particle-1" id="p1"></div>
-            <div class="packet-particle particle-2" id="p2"></div>
-            <div class="packet-particle particle-3" id="p3"></div>
+        <!-- Encrypted Bridge -->
+        <div class="conduit">
+          <div class="wire" aria-hidden="true">
+            <div class="wire-glow" id="beamGlow"></div>
+            <span class="pkt p1" id="p1"></span>
+            <span class="pkt p2" id="p2"></span>
+            <span class="pkt p3" id="p3"></span>
           </div>
-          <div class="relay-hub-node" id="hubNode">
-            <div class="hub-radar"></div>
-            <div class="hub-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
-              </svg>
-            </div>
-            <span class="hub-label">Cloud Relay</span>
-            <span class="hub-sub mono">Public · or your Worker</span>
-          </div>
-          <div class="encryption-tag">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <div class="relay-box" id="hubNode">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2"></rect>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
             </svg>
-            <span id="tunnelStatusText">TLS 1.3 · End-to-End</span>
+            <span class="relay-name">Encrypted Bridge</span>
+            <span class="relay-meta" id="tunnelStatusText">Auto · No Login</span>
           </div>
         </div>
 
-        <!-- Node B: Operator Mac -->
-        <div class="mac-node" id="nodeB">
-          <div class="node-header">
-            <div class="mac-dots"><span></span><span></span><span></span></div>
-            <span class="node-role-badge">Machine B (Operator)</span>
+        <!-- Friend's Mac -->
+        <div class="win" id="nodeB">
+          <div class="win-bar">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <span class="win-title">Friend’s Mac · Needs 15 Min</span>
+            <span class="state-pill" id="badgeB">Waiting</span>
           </div>
-          <div class="node-window-body">
-            <!-- Normal App State -->
-            <div class="app-ui-mini" id="bAppView">
-              <div class="mini-topbar">
-                <span class="mini-app-name">TempRoom</span>
-                <span class="mini-badge" id="badgeB">IDLE</span>
+          <div class="win-body">
+            <!-- App Slot 1: Temporary Chrome -->
+            <div class="app-slot" id="chromeSlot">
+              <div class="slot-head">
+                <span class="slot-name">1 Temporary Chrome Window</span>
+                <span class="mono slot-state" id="chromeStatusB">Locked</span>
               </div>
-              <div class="mini-card input-box" id="keyBoxB">
-                <span class="mini-card-title">JOIN WITH KEY</span>
-                <span class="key-code" id="inputKeyB">--------</span>
+              <div class="chrome-live">
+                <span class="url-pill mono" id="chromeBar">chatgpt.com · stripe.com</span>
+                <span class="exit-readout" id="chromeReadout">Paste code</span>
               </div>
-              <div class="mini-meta-row">
-                <span class="meta-label">Clean Chrome</span>
-                <span class="meta-val mono" id="chromeStatusB">Ready (Ephemeral)</span>
-              </div>
-              <div class="mini-meta-row">
-                <span class="meta-label">Routing Exit</span>
-                <span class="meta-val mono" id="exitStatusB">Direct ISP</span>
-              </div>
+              <div class="laser" aria-hidden="true"></div>
             </div>
 
-            <!-- Sandboxed Chrome Float Window (Shown in Step 3) -->
-            <div class="chrome-sandbox-preview hidden" id="chromePreview">
-              <div class="chrome-header">
-                <div class="chrome-dots"><span></span><span></span><span></span></div>
-                <div class="chrome-url-bar">
-                  <span class="lock-icon">🔒</span>
-                  <span class="url-text">https://ipinfo.io/ip</span>
-                </div>
+            <!-- App Slot 2: Everything else on Friend's Mac -->
+            <div class="kv-stack">
+              <div class="kv">
+                <span>Friend’s WeChat &amp; Safari</span>
+                <strong class="dim">Stay on local Wi-Fi</strong>
               </div>
-              <div class="chrome-content">
-                <div class="ip-display-card">
-                  <span class="ip-check-label">VERIFIED EGRESS IP</span>
-                  <span class="ip-check-val mono">203.0.113.7</span>
-                  <span class="ip-match-tag">Matched Machine A</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Shredder Animation (Shown in Step 4) -->
-            <div class="shredder-overlay hidden" id="shredderOverlay">
-              <div class="shredder-box">
-                <div class="shredder-laser"></div>
-                <span class="shred-icon">⚡</span>
-                <span class="shred-title">Zero-Trace Purged</span>
-                <span class="shred-path mono">rm -rf /tmp/temproom-chrome-*</span>
+              <div class="kv">
+                <span>Friend’s Mac camera</span>
+                <strong>Works normally</strong>
               </div>
             </div>
           </div>
-          <div class="node-caption">Friend's Mac in Another City</div>
         </div>
       </div>
+    </div>
+
+    <!-- 3 Concrete Real-World Scenarios -->
+    <div class="scenarios">
+      <article class="scen-card">
+        <div class="scen-visual" aria-hidden="true">
+          <span class="v-box bad-box">Blocked Site</span>
+          <span class="v-arrow">→</span>
+          <span class="v-box ok-box">Opens via Your IP</span>
+        </div>
+        <h2>Help a teammate get unblocked</h2>
+        <p>Let a co-founder or friend open ChatGPT, Stripe, or docs for 15 minutes—without handing over your Clash link.</p>
+      </article>
+
+      <article class="scen-card">
+        <div class="scen-visual" aria-hidden="true">
+          <span class="v-box">Your IP 🌍</span>
+          <span class="v-arrow">+</span>
+          <span class="v-box ok-box">Their Camera 📷</span>
+        </div>
+        <h2>Pass face or ID checks remotely</h2>
+        <p>Screen-sharing is laggy and cannot use their webcam. TempRoom runs Chrome on their Mac using your overseas IP.</p>
+      </article>
+
+      <article class="scen-card">
+        <div class="scen-visual" aria-hidden="true">
+          <span class="v-box">Click Stop</span>
+          <span class="v-arrow">→</span>
+          <span class="v-box cut-box">Closed &amp; Erased</span>
+        </div>
+        <h2>Take back access in one click</h2>
+        <p>Stop anytime: the window closes and wipes all cookies. If the network drops, it stops instead of leaking real IP.</p>
+      </article>
+    </div>
+
+    <!-- Plain-Language Comparison Table -->
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <caption class="sr-only">Comparison of ways to lend network access for 15 minutes</caption>
+        <thead>
+          <tr>
+            <th scope="col">When a friend needs your network for 15 min</th>
+            <th scope="col">Send VPN Link</th>
+            <th scope="col">Screen Share</th>
+            <th scope="col">Install Full VPN</th>
+            <th scope="col" class="col-tr">TempRoom</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Your VPN password / subscription</th>
+            <td class="bad">Given away forever</td>
+            <td class="dim">Private</td>
+            <td class="bad">Given away</td>
+            <td class="col-tr ok">Stays private</td>
+          </tr>
+          <tr>
+            <th scope="row">Your desktop &amp; personal chats</th>
+            <td class="dim">Private</td>
+            <td class="bad">Watched live</td>
+            <td class="dim">Private</td>
+            <td class="col-tr ok">Private</td>
+          </tr>
+          <tr>
+            <th scope="row">Friend’s WeChat &amp; local apps</th>
+            <td class="warn">All rerouted</td>
+            <td class="dim">Normal</td>
+            <td class="bad">All rerouted</td>
+            <td class="col-tr ok">Untouched</td>
+          </tr>
+          <tr>
+            <th scope="row">Friend’s own Mac camera</th>
+            <td class="dim">Works</td>
+            <td class="bad">Can’t use</td>
+            <td class="dim">Works</td>
+            <td class="col-tr ok">Works natively</td>
+          </tr>
+          <tr>
+            <th scope="row">Stop sharing when finished</th>
+            <td class="bad">Can’t take back</td>
+            <td class="warn">End call</td>
+            <td class="warn">Manual uninstall</td>
+            <td class="col-tr ok">1-click close &amp; wipe</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </main>
 
-  <!-- Visual Bento Grid (Pure Technical Diagrams, No Long Words) -->
-  <section class="section-container">
-    <div class="section-header">
-      <span class="section-tag">ARCHITECTURE</span>
-      <h2 class="section-title">Engineered For Zero Footprint.</h2>
-    </div>
-
-    <div class="bento-grid">
-      <!-- Card 1: Fail-Closed Protection -->
-      <div class="bento-card">
-        <div class="card-visual">
-          <div class="diagram-circuit">
-            <div class="circuit-wire wire-in"></div>
-            <div class="circuit-breaker" id="circuitBreaker">
-              <div class="breaker-lever"></div>
-              <span class="breaker-label">FAIL-CLOSED</span>
-            </div>
-            <div class="circuit-wire wire-out"></div>
-          </div>
-          <div class="diagram-status-pill">
-            <span class="pill-dot red"></span>
-            <span>Real IP Never Leaks</span>
-          </div>
-        </div>
-        <div class="card-info">
-          <h3 class="card-h">Fail-Closed Watchdog</h3>
-          <p class="card-p">If tunnel degrades, the local socket immediately severs. Zero fallback to local ISP.</p>
-        </div>
-      </div>
-
-      <!-- Card 2: Pure L4 Pipeline (No Credentials) -->
-      <div class="bento-card">
-        <div class="card-visual">
-          <div class="diagram-pipeline">
-            <div class="pipe-node">
-              <span class="pipe-sym">🔑</span>
-              <span class="pipe-name">No Passwords</span>
-              <span class="pipe-badge no">BLOCKED</span>
-            </div>
-            <div class="pipe-divider"></div>
-            <div class="pipe-node active">
-              <span class="pipe-sym">⚡</span>
-              <span class="pipe-name">Layer-4 Proxy</span>
-              <span class="pipe-badge yes">TUNNEL ONLY</span>
-            </div>
-          </div>
-        </div>
-        <div class="card-info">
-          <h3 class="card-h">Zero Credential Access</h3>
-          <p class="card-p">Operator never sees, touches, or possesses your Google, Apple, or service logins.</p>
-        </div>
-      </div>
-
-      <!-- Card 3: Ephemeral Ramdisk Sandbox -->
-      <div class="bento-card">
-        <div class="card-visual">
-          <div class="diagram-sandbox">
-            <div class="container-box">
-              <div class="container-top">
-                <span class="container-tag">/tmp/temproom-profile/</span>
-              </div>
-              <div class="container-files">
-                <span class="file-chip">Cookies [TEMP]</span>
-                <span class="file-chip">History [TEMP]</span>
-                <span class="file-chip">Storage [TEMP]</span>
-              </div>
-              <div class="flame-effect"></div>
-            </div>
-          </div>
-        </div>
-        <div class="card-info">
-          <h3 class="card-h">Ephemeral Chrome Profile</h3>
-          <p class="card-p">Starts with clean flags. Discarded with <code>rm -rf</code> on session termination.</p>
-        </div>
-      </div>
-
-      <!-- Card 4: WebRTC & DNS Armor -->
-      <div class="bento-card">
-        <div class="card-visual">
-          <div class="diagram-shield">
-            <div class="shield-circle">
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-              </svg>
-            </div>
-            <div class="shield-matrix">
-              <div class="matrix-item"><span>DNS Leak</span><strong>0.00%</strong></div>
-              <div class="matrix-item"><span>WebRTC Stun</span><strong>Blocked</strong></div>
-            </div>
-          </div>
-        </div>
-        <div class="card-info">
-          <h3 class="card-h">Full Protocol Armor</h3>
-          <p class="card-p">WebRTC local candidate leaking and DNS UDP bypasses are strictly trapped in-tunnel.</p>
-        </div>
-      </div>
-      <!-- Card 5: Dual-Path Relay -->
-      <div class="bento-card bento-wide">
-        <div class="card-visual">
-          <div class="diagram-dual" aria-hidden="true">
-            <div class="dual-end">
-              <span class="dual-end-name">Partner</span>
-              <span class="dual-end-sub mono">invite only</span>
-            </div>
-            <div class="dual-lanes">
-              <div class="dual-lane">
-                <span class="lane-line"></span>
-                <span class="lane-node">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path></svg>
-                  Public Relay
-                  <span class="pipe-badge lane-badge">DEFAULT</span>
-                </span>
-              </div>
-              <div class="dual-lane active">
-                <span class="lane-line"><span class="lane-packet"></span></span>
-                <span class="lane-node">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                  Your Cloudflare Worker
-                  <span class="pipe-badge yes">ZERO-TRUST</span>
-                </span>
-              </div>
-              <div class="dual-tags">
-                <span class="dual-tag mono">TLS 1.3 E2E</span>
-                <span class="dual-tag mono">RAM only</span>
-                <span class="dual-tag mono">no logs</span>
-                <span class="dual-tag mono">partner: no account</span>
-              </div>
-            </div>
-            <div class="dual-end">
-              <span class="dual-end-name">Your Proxy</span>
-              <span class="dual-end-sub mono">127.0.0.1:7890</span>
-            </div>
-          </div>
-        </div>
-        <div class="card-info">
-          <h3 class="card-h">Dual-Path Relay</h3>
-          <p class="card-p">Use the public relay, or one click deploys your own Worker. The invite carries the route.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- End-to-End Visual Topology Flow -->
-  <section class="section-container">
-    <div class="section-header">
-      <span class="section-tag">TOPOLOGY</span>
-      <h2 class="section-title">The Complete Data Highway.</h2>
-    </div>
-
-    <div class="topology-board">
-      <div class="topo-step">
-        <div class="topo-icon-box">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <circle cx="12" cy="12" r="4"></circle>
-          </svg>
-        </div>
-        <span class="topo-title">Isolated Chrome</span>
-        <span class="topo-detail mono">--user-data-dir=/tmp</span>
-      </div>
-
-      <div class="topo-arrow">
-        <span class="stream-line"></span>
-      </div>
-
-      <div class="topo-step">
-        <div class="topo-icon-box">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 11a9 9 0 0 1 9 9"></path>
-            <path d="M4 4a16 16 0 0 1 16 16"></path>
-            <circle cx="5" cy="19" r="1"></circle>
-          </svg>
-        </div>
-        <span class="topo-title">Loopback Ingress</span>
-        <span class="topo-detail mono">127.0.0.1:auto</span>
-      </div>
-
-      <div class="topo-arrow">
-        <span class="stream-line"></span>
-      </div>
-
-      <div class="topo-step highlight">
-        <div class="topo-icon-box">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
-          </svg>
-        </div>
-        <span class="topo-title">Cloud Relay</span>
-        <span class="topo-detail mono">Public / Your Worker</span>
-      </div>
-
-      <div class="topo-arrow">
-        <span class="stream-line"></span>
-      </div>
-
-      <div class="topo-step">
-        <div class="topo-icon-box">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-          </svg>
-        </div>
-        <span class="topo-title">Your Local Proxy</span>
-        <span class="topo-detail mono">127.0.0.1:7890</span>
-      </div>
-
-      <div class="topo-arrow">
-        <span class="stream-line"></span>
-      </div>
-
-      <div class="topo-step">
-        <div class="topo-icon-box">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="2" y1="12" x2="22" y2="12"></line>
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-          </svg>
-        </div>
-        <span class="topo-title">Global Target</span>
-        <span class="topo-detail mono">Verified Exit IP</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- Download & Action Section -->
-  <section class="section-container download-section" id="download">
-    <div class="download-card">
-      <div class="download-content">
-        <span class="dl-badge">MACOS UNIVERSAL</span>
-        <h2 class="dl-title">Ready in Seconds.</h2>
-        <p class="dl-sub">No kernel extensions. No account sign-up. Pure user-space execution.</p>
-
-        <div class="dl-actions">
-          <a href="https://github.com/edison-land/temproom/releases/latest" class="btn-primary-large">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Download for macOS</span>
-            <span class="btn-arch">Apple Silicon & Intel</span>
-          </a>
-        </div>
-
-        <div class="dl-meta-row">
-          <span>macOS 11.0+ Big Sur, Monterey, Ventura, Sonoma, Sequoia</span>
-          <span class="meta-dot"></span>
-          <span>Zero Root Required</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Minimal Footer -->
   <footer class="footer">
-    <div class="footer-content">
-      <div class="brand">
-        <span class="brand-dot"></span>
-        <span class="brand-name">TempRoom</span>
+    <div class="footer-inner">
+      <span class="footer-brand">TempRoom · Free &amp; Open Source</span>
+      <div class="footer-links">
+        <a href="https://github.com/edison-land/temproom" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/edison-land/temproom/releases/tag/v2.1.0" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/edison-land/temproom/blob/main/LICENSE" target="_blank" rel="noopener">MIT</a>
+        <a href="/llms.txt">llms.txt</a>
       </div>
-      <span class="footer-note">Simple Purpose. Simple Architecture. Pure Privacy.</span>
     </div>
   </footer>
 

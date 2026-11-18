@@ -210,15 +210,22 @@ func runRejectAndRetries(t *testing.T, e env) {
 	}
 }
 
-// The open-source build ships without a default relay: rooms need a private
-// relay, and invites that do not name one are rejected with a clear message.
-func TestNoDefaultRelayBuild(t *testing.T) {
+type fakeQuickRelay struct {
+	url    string
+	closed bool
+}
+
+func (f *fakeQuickRelay) LocalURL() string  { return f.url }
+func (f *fakeQuickRelay) PublicURL() string { return f.url }
+func (f *fakeQuickRelay) Close() error      { f.closed = true; return nil }
+
+// The open-source build ships without a hardcoded server: new rooms default to
+// an ephemeral Quick Tunnel (zero login), while invites without @relay are
+// still rejected with a clear message.
+func TestNoDefaultRelayBuildUsesQuickTunnel(t *testing.T) {
 	e := setupRelays(t, "", "")
-	if v := e.a.RelayConfig(); v.PublicAvailable {
-		t.Fatal("public relay reported without one configured")
-	}
-	if _, err := e.a.CreateRoom(e.proxy.Addr); err == nil || !strings.Contains(err.Error(), "Worker") {
-		t.Fatalf("create without any relay: %v", err)
+	if v := e.a.RelayConfig(); v.PublicAvailable || v.Mode != "quick" {
+		t.Fatalf("unexpected default relay config: %+v", v)
 	}
 	if _, _, err := e.a.SetRelay("public", ""); err == nil {
 		t.Fatal("selected a public relay that does not exist")
@@ -226,15 +233,21 @@ func TestNoDefaultRelayBuild(t *testing.T) {
 	if _, err := e.b.JoinRoom("ABCD-EF23-" + strings.Repeat("A", 26)); err == nil || !strings.Contains(err.Error(), "full invite") {
 		t.Fatalf("join without relay: %v", err)
 	}
-	relay := startRelay(t)
-	if _, h, err := e.a.SetRelay("custom", relay); err != nil || !h.OK {
-		t.Fatal(err)
-	}
+
+	// Out-of-the-box Quick Tunnel mode works immediately without any Worker setup.
+	fq := &fakeQuickRelay{url: startRelay(t)}
+	e.a.StartQuick = func(context.Context, string, string) (QuickRelay, error) { return fq, nil }
 	ra, err := e.a.CreateRoom(e.proxy.Addr)
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !strings.Contains(ra.Invite, "@") {
+		t.Fatalf("quick tunnel invite missing @relay: %+v", ra)
+	}
 	runSharingFrom(t, e, ra)
+	if !fq.closed {
+		t.Fatal("quick tunnel was not torn down when the session ended")
+	}
 }
 
 // An http:// default relay (allowed for the built-in server) must still pass
@@ -247,4 +260,20 @@ func TestPublicRelayHealth(t *testing.T) {
 	if h := e.a.CheckRelay(e.a.PublicURL); !h.OK {
 		t.Fatalf("public relay health by url: %+v", h)
 	}
+}
+
+func TestLiveQuickTunnelEndToEnd(t *testing.T) {
+	if os.Getenv("TEMPROOM_TEST_QUICK") == "" {
+		t.Skip("set TEMPROOM_TEST_QUICK=1 to test against live trycloudflare.com")
+	}
+	e := setupRelays(t, "", "")
+	ra, err := e.a.CreateRoom(e.proxy.Addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("live quick tunnel invite: %s", ra.Invite)
+	if !strings.HasSuffix(ra.Invite, ".trycloudflare.com") {
+		t.Fatalf("expected trycloudflare.com invite, got %s", ra.Invite)
+	}
+	runSharingFrom(t, e, ra)
 }

@@ -3,6 +3,7 @@ package signaling
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -49,24 +50,43 @@ func status(err error) int {
 	return 0
 }
 
-// IsGone means the room no longer exists for this client (deleted, expired, or our token is no longer valid).
+// IsGone means the room no longer exists for this client (deleted, expired,
+// our token is no longer valid, or a host's Quick Tunnel was torn down -> 530).
 func IsGone(err error) bool {
 	s := status(err)
-	return s == 404 || s == 410 || s == 403
+	return s == 404 || s == 410 || s == 403 || s == 530
 }
 
 func IsConflict(err error) bool { return status(err) == 409 }
 
 type Client struct {
 	httpClient *http.Client
+	wsClient   *http.Client
 	mu         sync.Mutex
 	serverURL  string
 	cancelWS   context.CancelFunc
 	onEvent    func(string)
 }
 
+// compactCurves avoids Go 1.24+'s default X25519MLKEM768 ~1.6KB fragmented
+// ClientHello, which Clash TUN Fake-IP / SNI middleboxes drop with EOF.
+var compactCurves = []tls.CurveID{tls.X25519, tls.CurveP256}
+
 func NewClient(serverURL string, onEvent func(string)) *Client {
-	return &Client{serverURL: strings.TrimRight(serverURL, "/"), httpClient: &http.Client{Timeout: 8 * time.Second}, onEvent: onEvent}
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{CurvePreferences: compactCurves}
+	tr.ForceAttemptHTTP2 = true
+
+	wsTr := http.DefaultTransport.(*http.Transport).Clone()
+	wsTr.TLSClientConfig = &tls.Config{CurvePreferences: compactCurves}
+	wsTr.ForceAttemptHTTP2 = false
+
+	return &Client{
+		serverURL:  strings.TrimRight(serverURL, "/"),
+		httpClient: &http.Client{Transport: tr, Timeout: 8 * time.Second},
+		wsClient:   &http.Client{Transport: wsTr},
+		onEvent:    onEvent,
+	}
 }
 
 // URL is the relay the current session uses (public server or a private Worker).
@@ -93,24 +113,40 @@ func (c *Client) requestAt(ctx context.Context, base, method, path, token string
 	if base == "" {
 		return errors.New("no signaling server configured")
 	}
-	var rd io.Reader
+	var data []byte
 	if body != nil {
-		data, err := json.Marshal(body)
+		var err error
+		data, err = json.Marshal(body)
 		if err != nil {
 			return err
 		}
-		rd = bytes.NewReader(data)
 	}
-	req, err := http.NewRequestWithContext(ctx, method, base+"/api/v1/rooms/"+path, rd)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
+	var resp *http.Response
+	for attempt := 0; attempt < 2; attempt++ {
+		var rd io.Reader
+		if data != nil {
+			rd = bytes.NewReader(data)
+		}
+		req, err := http.NewRequestWithContext(ctx, method, base+"/api/v1/rooms/"+path, rd)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		resp, err = c.httpClient.Do(req)
+		if err == nil {
+			break
+		}
+		if attempt == 0 && ctx.Err() == nil && isTransientNetErr(err) {
+			select {
+			case <-ctx.Done():
+				return err
+			case <-time.After(350 * time.Millisecond):
+				continue
+			}
+		}
 		return err
 	}
 	defer resp.Body.Close()
@@ -122,6 +158,14 @@ func (c *Client) requestAt(ctx context.Context, base, method, path, token string
 		return json.NewDecoder(resp.Body).Decode(out)
 	}
 	return nil
+}
+
+func isTransientNetErr(err error) bool {
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+	s := err.Error()
+	return strings.Contains(s, ": EOF") || strings.Contains(s, "connection reset")
 }
 
 // CreateRoom reuses requestID on retries so a lost response does not leave a second room.
@@ -216,7 +260,10 @@ func (c *Client) listen(ctx context.Context, key, token string) {
 	delay := 500 * time.Millisecond
 	for ctx.Err() == nil {
 		dialCtx, done := context.WithTimeout(ctx, 8*time.Second)
-		conn, _, err := websocket.Dial(dialCtx, wsURL, &websocket.DialOptions{HTTPHeader: http.Header{"Authorization": []string{"Bearer " + token}}})
+		conn, _, err := websocket.Dial(dialCtx, wsURL, &websocket.DialOptions{
+			HTTPClient: c.wsClient,
+			HTTPHeader: http.Header{"Authorization": []string{"Bearer " + token}},
+		})
 		done()
 		if err == nil {
 			delay = 500 * time.Millisecond

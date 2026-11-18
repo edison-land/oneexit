@@ -16,6 +16,7 @@ import (
 	"temproom/internal/device"
 	"temproom/internal/egress"
 	"temproom/internal/network"
+	"temproom/internal/quicktunnel"
 	"temproom/internal/room"
 	"temproom/internal/signaling"
 	"temproom/internal/tunnel"
@@ -80,9 +81,16 @@ type SystemStatus struct {
 
 // RelayView is the saved relay choice for new rooms.
 type RelayView struct {
-	Mode            string `json:"mode"` // "public" | "custom"
+	Mode            string `json:"mode"` // "quick" | "public" | "custom"
 	CustomWorkerURL string `json:"customWorkerUrl"`
 	PublicAvailable bool   `json:"publicAvailable"` // this build has a default relay
+}
+
+// QuickRelay is an ephemeral, per-session Cloudflare Quick Tunnel + local hub.
+type QuickRelay interface {
+	LocalURL() string
+	PublicURL() string
+	Close() error
 }
 
 type RelayHealth struct {
@@ -108,6 +116,7 @@ type Service struct {
 	joinID       string
 	provider     *tunnel.Provider
 	consumer     *tunnel.Consumer
+	quick        QuickRelay
 	net          NetworkView
 	checking     bool
 	lastCheck    time.Time
@@ -115,6 +124,7 @@ type Service struct {
 	lastEnd      *EndInfo
 	pendingClose map[string]pendingLeave // room key -> where/how to close it
 	relayURL     string                  // relay of the current session
+	relayLabel   string                  // public relay host shown in UI (when relayURL is loopback)
 	relayCfg     config.Config
 	configDir    string
 	joinRelay    string
@@ -137,6 +147,8 @@ type Service struct {
 	Signaling   *signaling.Client
 	// DirectIP returns this machine's own public IP (overridable in tests).
 	DirectIP func(context.Context) (string, error)
+	// StartQuick starts a disposable *.trycloudflare.com tunnel (overridable in tests).
+	StartQuick func(ctx context.Context, cacheDir, proxyAddr string) (QuickRelay, error)
 	// PublicURL is the default relay (TEMPROOM_SERVER_URL overrides it).
 	PublicURL string
 }
@@ -157,6 +169,9 @@ func NewService() *Service {
 		NetResolver: network.NewResolver(),
 		Probe:       egress.NewSOCKS5Probe(4 * time.Second),
 		TunnelProbe: egress.NewSOCKS5Probe(12 * time.Second),
+		StartQuick: func(ctx context.Context, cacheDir, proxyAddr string) (QuickRelay, error) {
+			return quicktunnel.Start(ctx, cacheDir, proxyAddr)
+		},
 	}
 	s.DirectIP = s.cachedPublicIP
 	s.configDir, _ = config.Dir()
@@ -196,6 +211,13 @@ func (s *Service) Close() {
 	s.stopOnce.Do(func() {
 		close(s.stop)
 		s.Signaling.DisconnectWS()
+		s.mu.Lock()
+		q := s.quick
+		s.quick = nil
+		s.mu.Unlock()
+		if q != nil {
+			_ = q.Close()
+		}
 	})
 }
 
@@ -223,6 +245,21 @@ func shortErr(err error) string {
 	return msg
 }
 
+func (s *Service) effectiveRelayModeLocked() string {
+	switch s.relayCfg.RelayMode {
+	case config.RelayCustom:
+		if s.relayCfg.CustomWorkerURL != "" {
+			return config.RelayCustom
+		}
+	case config.RelayQuick:
+		return config.RelayQuick
+	}
+	if s.PublicURL != "" {
+		return config.RelayPublic
+	}
+	return config.RelayQuick
+}
+
 // ---- user operations ----
 
 func (s *Service) CreateRoom(proxyAddr string) (*SessionView, error) {
@@ -234,16 +271,6 @@ func (s *Service) CreateRoom(proxyAddr string) (*SessionView, error) {
 		}
 		return nil, errors.New("leave the current session first")
 	}
-	s.mu.Lock()
-	target := s.PublicURL
-	if s.relayCfg.RelayMode == config.RelayCustom && s.relayCfg.CustomWorkerURL != "" {
-		target = s.relayCfg.CustomWorkerURL
-	}
-	s.mu.Unlock()
-	if target == "" {
-		return nil, errors.New("this build has no default relay: choose My Cloudflare Worker under Relay")
-	}
-	s.Signaling.SetURL(target)
 	proxyAddr = strings.TrimSpace(proxyAddr)
 	if proxyAddr == "" {
 		proxyAddr = "127.0.0.1:7890"
@@ -262,8 +289,53 @@ func (s *Service) CreateRoom(proxyAddr string) (*SessionView, error) {
 	if direct != "" && direct == probe.ExitIP {
 		warning = "Proxy exit matches this Mac's public IP. Fine if your proxy runs in TUN/global mode; otherwise check it is not in direct mode."
 	}
+
+	s.mu.Lock()
+	mode := s.effectiveRelayModeLocked()
+	customURL := s.relayCfg.CustomWorkerURL
+	cfgDir := s.configDir
+	s.mu.Unlock()
+
+	var (
+		target      string
+		inviteRelay string
+		relayLabel  string
+		quickTun    QuickRelay
+	)
+	switch mode {
+	case config.RelayCustom:
+		target = customURL
+		inviteRelay = customURL
+	case config.RelayQuick:
+		if s.StartQuick == nil {
+			return nil, errors.New("quick tunnel is unavailable in this build: choose My Cloudflare Worker under Relay")
+		}
+		qCtx, qCancel := context.WithTimeout(context.Background(), 45*time.Second)
+		q, err := s.StartQuick(qCtx, cfgDir, proxyAddr)
+		qCancel()
+		if err != nil {
+			return nil, fmt.Errorf("start temporary Cloudflare tunnel: %w", err)
+		}
+		quickTun = q
+		target = q.LocalURL()
+		inviteRelay = q.PublicURL()
+		relayLabel = q.PublicURL()
+	default:
+		target = s.PublicURL
+	}
+	if target == "" {
+		if quickTun != nil {
+			_ = quickTun.Close()
+		}
+		return nil, errors.New("no relay configured")
+	}
+	s.Signaling.SetURL(target)
+
 	secret, err := tunnel.NewSecret()
 	if err != nil {
+		if quickTun != nil {
+			_ = quickTun.Close()
+		}
 		return nil, err
 	}
 	if s.createID == "" {
@@ -279,15 +351,24 @@ func (s *Service) CreateRoom(proxyAddr string) (*SessionView, error) {
 		time.Sleep(time.Duration(attempt+1) * 500 * time.Millisecond)
 	}
 	if err != nil {
-		if target != s.PublicURL {
+		if quickTun != nil {
+			_ = quickTun.Close()
+		}
+		if mode == config.RelayCustom {
 			return nil, fmt.Errorf("your Cloudflare Worker (%s) did not respond: %w", target, err)
 		}
 		return nil, fmt.Errorf("create room: %w", err)
 	}
 	if rem.RoomKey == "" || rem.State != "WAITING" || rem.ExpiresAt.IsZero() {
+		if quickTun != nil {
+			_ = quickTun.Close()
+		}
 		return nil, errors.New("invalid server room response")
 	}
 	if rem.Token == "" {
+		if quickTun != nil {
+			_ = quickTun.Close()
+		}
 		return nil, errors.New("signaling server is outdated (no room token); redeploy temproom-server")
 	}
 	s.createID = ""
@@ -298,12 +379,10 @@ func (s *Service) CreateRoom(proxyAddr string) (*SessionView, error) {
 	s.RoomMgr.CreateRoomWithKey(rem.RoomKey, room.RoleRequester)
 	s.RoomMgr.SetRemoteMetadata(rem.CreatedAt, rem.ExpiresAt, probe.ExitIP)
 	s.RoomMgr.SetProxyAddress(proxyAddr)
-	inviteRelay := ""
-	if target != s.PublicURL {
-		inviteRelay = target
-	}
+	s.quick = quickTun
 	s.token, s.secret, s.invite = rem.Token, secret, tunnel.FormatInvite(rem.RoomKey, secret, inviteRelay)
 	s.relayURL = target
+	s.relayLabel = relayLabel
 	s.net = NetworkView{State: NetIdle, ProxyAddress: proxyAddr, ExpectedExitIP: probe.ExitIP, DirectIP: direct, Warning: warning}
 	s.lastEnd, s.lastOK = nil, time.Now()
 	s.Signaling.Subscribe(rem.RoomKey, rem.Token)
@@ -336,13 +415,24 @@ func (s *Service) JoinRoom(invite string) (*SessionView, error) {
 	if s.joinKey != key || s.joinRelay != target {
 		s.joinKey, s.joinRelay, s.joinID = key, target, randID()
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	isTryCF := strings.HasSuffix(target, ".trycloudflare.com")
+	maxAttempts := 3
+	joinTimeout := 15 * time.Second
+	if isTryCF {
+		maxAttempts = 6
+		joinTimeout = 22 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), joinTimeout)
 	defer cancel()
 	var rem *signaling.RemoteRoom
-	for attempt := 0; attempt < 3; attempt++ {
+	for attempt := 0; attempt < maxAttempts; attempt++ {
 		rem, err = s.Signaling.JoinRoom(ctx, key, s.joinID)
 		var he *signaling.HTTPError
-		if err == nil || errors.As(err, &he) || ctx.Err() != nil {
+		if err == nil || ctx.Err() != nil {
+			break
+		}
+		// Fresh *.trycloudflare.com hostnames can briefly return 530 or DNS error for 1-3s.
+		if errors.As(err, &he) && !(isTryCF && he.Status == 530 && attempt < maxAttempts-1) {
 			break
 		}
 		time.Sleep(time.Duration(attempt+1) * 500 * time.Millisecond)
@@ -419,7 +509,7 @@ func (s *Service) ApproveJoin() (*SessionView, error) {
 }
 
 // LeaveRoom revokes access locally first (cuts relay streams, closes the tunnel
-// port and Chrome), then tells the server.
+// port and Chrome), then tells the server and destroys any Quick Tunnel.
 func (s *Service) LeaveRoom() ([]StepResult, error) {
 	s.opMu.Lock()
 	defer s.opMu.Unlock()
@@ -430,6 +520,8 @@ func (s *Service) LeaveRoom() ([]StepResult, error) {
 		return []StepResult{}, nil
 	}
 	key, token, relayURL := sess.RoomKey, s.token, s.relayURL
+	q := s.quick
+	s.quick = nil
 	results := s.endLocked("You ended the session.")
 	s.mu.Unlock()
 
@@ -437,13 +529,18 @@ func (s *Service) LeaveRoom() ([]StepResult, error) {
 	defer cancel()
 	err := s.Signaling.LeaveRoomAt(ctx, relayURL, key, token)
 	step := StepResult{Step: "Close the room on the server", Success: true}
-	if err != nil && !signaling.IsGone(err) {
+	if err != nil && !signaling.IsGone(err) && q == nil {
 		step = StepResult{Step: "Close the room on the server", Error: "will retry; the server also drops it within 45s of no contact"}
 		s.mu.Lock()
 		s.pendingClose[key] = pendingLeave{url: relayURL, token: token}
 		s.mu.Unlock()
 	}
 	results = append(results, step)
+	if q != nil {
+		time.Sleep(100 * time.Millisecond) // allow room_closed WS hint to flush before killing cloudflared
+		_ = q.Close()
+		results = append(results, StepResult{Step: "Destroy temporary trycloudflare.com tunnel", Success: true})
+	}
 	s.mu.Lock()
 	if s.lastEnd != nil {
 		s.lastEnd.Results = results
@@ -479,11 +576,17 @@ func (s *Service) endLocked(reason string) []StepResult {
 	} else if sess != nil && sess.Role == room.RoleOperator {
 		results = append(results, StepResult{Step: "Quit the temporary Chrome", Success: true, Skipped: true})
 	}
+	if s.quick != nil {
+		q := s.quick
+		s.quick = nil
+		go func() { _ = q.Close() }()
+		results = append(results, StepResult{Step: "Destroy temporary trycloudflare.com tunnel", Success: true})
+	}
 	s.Signaling.DisconnectWS()
 	_, _ = s.RoomMgr.CloseRoom()
 	s.gen++
 	s.provider, s.consumer = nil, nil
-	s.token, s.secret, s.invite, s.relayURL = "", tunnel.Secret{}, "", ""
+	s.token, s.secret, s.invite, s.relayURL, s.relayLabel = "", tunnel.Secret{}, "", "", ""
 	s.net, s.checking = NetworkView{}, false
 	s.lastEnd = &EndInfo{Reason: reason, Results: results, At: time.Now()}
 	return results
@@ -670,7 +773,9 @@ func (s *Service) viewLocked() *SessionView {
 		return nil
 	}
 	v := &SessionView{Session: *sess, Invite: s.invite, Network: s.net, ChromeRunning: s.Chrome.IsRunning()}
-	if s.relayURL != "" && s.relayURL != s.PublicURL {
+	if s.relayLabel != "" {
+		v.Relay = strings.TrimPrefix(strings.TrimPrefix(s.relayLabel, "https://"), "http://")
+	} else if s.relayURL != "" && s.relayURL != s.PublicURL {
 		v.Relay = strings.TrimPrefix(strings.TrimPrefix(s.relayURL, "https://"), "http://")
 	}
 	return v
@@ -759,7 +864,11 @@ func (s *Service) GetSystemStatus() SystemStatus {
 func (s *Service) RelayConfig() RelayView {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return RelayView{Mode: s.relayCfg.RelayMode, CustomWorkerURL: s.relayCfg.CustomWorkerURL, PublicAvailable: s.PublicURL != ""}
+	return RelayView{
+		Mode:            s.effectiveRelayModeLocked(),
+		CustomWorkerURL: s.relayCfg.CustomWorkerURL,
+		PublicAvailable: s.PublicURL != "",
+	}
 }
 
 // CheckRelay probes a relay's /health. raw "" checks the relay new rooms use.
@@ -771,8 +880,14 @@ func (s *Service) CheckRelay(raw string) RelayHealth {
 			return RelayHealth{Error: err.Error()}
 		}
 		target = u
-	} else if v := s.RelayConfig(); v.Mode == config.RelayCustom {
-		target = v.CustomWorkerURL
+	} else {
+		v := s.RelayConfig()
+		switch v.Mode {
+		case config.RelayCustom:
+			target = v.CustomWorkerURL
+		case config.RelayQuick:
+			return RelayHealth{OK: true, URL: "trycloudflare.com", Worker: true}
+		}
 	}
 	if target == "" {
 		return RelayHealth{Error: "no default relay in this build"}
@@ -798,6 +913,9 @@ func (s *Service) SetRelay(mode, raw string) (RelayView, RelayHealth, error) {
 	next := config.Config{RelayMode: config.RelayPublic, CustomWorkerURL: cur.CustomWorkerURL}
 	var health RelayHealth
 	switch mode {
+	case config.RelayQuick:
+		next = config.Config{RelayMode: config.RelayQuick, CustomWorkerURL: cur.CustomWorkerURL}
+		health = RelayHealth{OK: true, URL: "trycloudflare.com", Worker: true}
 	case config.RelayPublic:
 		if s.PublicURL == "" {
 			return cur, RelayHealth{Error: "no default relay in this build"}, errors.New("this build has no default relay")
@@ -822,5 +940,5 @@ func (s *Service) SetRelay(mode, raw string) (RelayView, RelayHealth, error) {
 	s.mu.Lock()
 	s.relayCfg = next
 	s.mu.Unlock()
-	return RelayView{Mode: next.RelayMode, CustomWorkerURL: next.CustomWorkerURL, PublicAvailable: s.PublicURL != ""}, health, nil
+	return s.RelayConfig(), health, nil
 }
