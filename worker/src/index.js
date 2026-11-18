@@ -9,7 +9,7 @@
 
 const PROTOCOL = 2;
 const WAITING_TTL = 30 * 60 * 1000; // unapproved rooms
-const ACTIVE_TTL = 2 * 60 * 60 * 1000; // after approval
+const ACTIVE_TTL = 24 * 60 * 60 * 1000; // sliding window while active peers poll
 const LEASE_TTL = 45 * 1000; // a side that stops polling this long is gone
 const SWEEP_EVERY = 5 * 1000;
 const KEEPALIVE_EVERY = 25 * 1000; // keeps idle control/hint sockets open
@@ -224,7 +224,9 @@ export class Room {
     if (!r) return fail('room not found or expired', 404);
     const role = this.auth(token);
     if (!role) return fail('invalid room token', 403);
-    r.seen[role] = Date.now();
+    const now = Date.now();
+    r.seen[role] = now;
+    if (r.state === 'ACTIVE') r.expiresAt = now + ACTIVE_TTL;
     return json(this.view(role, false));
   }
 

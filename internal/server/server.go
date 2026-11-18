@@ -30,9 +30,10 @@ const (
 )
 
 var (
-	// Unapproved rooms follow the PRD's 30 minutes; approval grants a working window.
+	// Unapproved rooms expire after 30 minutes; approved rooms stay alive as
+	// long as peers keep polling (sliding 24h window, 45s heartbeat lease).
 	WaitingTTL = 30 * time.Minute
-	ActiveTTL  = 2 * time.Hour
+	ActiveTTL  = 24 * time.Hour
 	// A side that stops polling for this long is treated as gone (crash, quit, lost network).
 	LeaseTTL      = 45 * time.Second
 	sweepInterval = 5 * time.Second
@@ -218,7 +219,11 @@ func (h *Hub) Status(key, token string) (*Room, error) {
 	if role == "" {
 		return nil, errForbidden
 	}
-	r.seen[role] = time.Now()
+	now := time.Now()
+	r.seen[role] = now
+	if r.State == StateActive {
+		r.ExpiresAt = now.Add(ActiveTTL)
+	}
 	s := snapshot(r)
 	s.Role = role
 	return s, nil

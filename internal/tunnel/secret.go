@@ -96,7 +96,7 @@ func (s Secret) serverTLS() (*tls.Config, error) {
 		Subject:      pkix.Name{CommonName: "temproom"},
 		DNSNames:     []string{"temproom"},
 		NotBefore:    time.Now().Add(-time.Hour),
-		NotAfter:     time.Now().Add(72 * time.Hour),
+		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
 	}
 	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, priv.Public(), priv)
 	if err != nil {
