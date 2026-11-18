@@ -1,10 +1,24 @@
+<div align="center">
+
 # OneExit（一窗）
 
-**Share your Mac's network exit with one person, for one session, inside one disposable Chrome window.**
+**Zero System Intrusion · Zero Login · End-to-End Encrypted · One Disposable Chrome**
+
+Share your Mac's network exit with one person, for one session, inside one isolated Chrome window.
+
+[Live Demo & Download](https://oneexit.pages.dev/) · [中文官网](https://oneexit.pages.dev/zh/) · [Release v2.1.0](https://github.com/edison-land/oneexit/releases/tag/v2.1.0) · [1-Click Cloudflare Worker](https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/oneexit/tree/main/worker)
+
+[![GitHub stars](https://img.shields.io/github/stars/edison-land/oneexit?style=flat&color=f97316)](https://github.com/edison-land/oneexit/stargazers)
+[![License: MIT](https://img.shields.io/badge/license-MIT-3b82f6?style=flat)](LICENSE)
+[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat&logo=go&logoColor=white)](go.mod)
+[![Wails](https://img.shields.io/badge/Desktop-Wails%20v3-dc2626?style=flat)](cmd/temproom-app)
+[![Relay](https://img.shields.io/badge/Relay-Cloudflare%20Tunnel%20%2F%20Workers-f38020?style=flat&logo=cloudflare&logoColor=white)](worker)
+[![Crypto](https://img.shields.io/badge/E2EE-TLS%201.3%20%C2%B7%20Ed25519%20%C2%B7%20HKDF-10b981?style=flat)](internal/tunnel)
+[![Platform](https://img.shields.io/badge/macOS-11%2B%20(arm64%20%2F%20x86__64)-111318?style=flat&logo=apple&logoColor=white)](https://github.com/edison-land/oneexit/releases/tag/v2.1.0)
+
+</div>
 
 OneExit 让你把本机代理（Clash / mihomo 等的 SOCKS5/mixed 端口）的出口，临时借给另一台 Mac 上的伙伴使用。伙伴只能在 OneExit 打开的临时 Chrome 里用；全程端到端加密，你随时可以一键收回。
-
-🌐 **在线演示与官网**：[oneexit.pages.dev](https://oneexit.pages.dev/)（[中文版](https://oneexit.pages.dev/zh/)） · 📦 **macOS 客户端下载**：[GitHub Release v2.1.0](https://github.com/edison-land/oneexit/releases/tag/v2.1.0)
 
 ```
 伙伴 B 的临时 Chrome ─▶ B 本机隧道端口 ═══ TLS 1.3 端到端 ═══▶ 中继 ═══▶ A 的 OneExit ─▶ A 的代理 ─▶ 网站
@@ -74,6 +88,15 @@ B 平时用的浏览器和其他应用**不会**经过 A。这是有意的设计
 | 双方 IP、连接时间、流量大小 | 能看到 | Cloudflare 能看到 |
 | 房间状态 | 只在内存中 | 只在内存中（每房间一个 Durable Object，不调用存储接口） |
 | 日志 | 取决于服务器配置 | Worker 不打印日志，observability 关闭 |
+
+## 技术栈
+
+| 层级 | 技术选型 | 说明 |
+|---|---|---|
+| **桌面客户端** | Go 1.26 + Wails v3 + 原生 Web (HTML/CSS/JS) | macOS 11+ Universal（Apple Silicon + Intel），内置中英双语切换 |
+| **端到端加密** | TLS 1.3 + Ed25519 + HKDF-SHA256 + RFC 5705 | 从邀请码派生密钥与主机证书公钥固定，中继全程只看到密文 |
+| **中继与穿透** | Cloudflare Quick Tunnel (`trycloudflare.com`) / Cloudflare Workers (Durable Objects) | 默认免登录即开即用；可选一键部署私有 Worker（纯内存、零存储、零日志） |
+| **浏览器隔离** | Google Chrome 独立 `--user-data-dir` + 远端 DNS + WebRTC UDP 禁用 | 不改系统代理、不装 TUN 虚拟网卡，结束即 `pkill` 并擦除临时目录 |
 
 ## 项目结构
 
