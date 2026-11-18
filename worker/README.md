@@ -1,31 +1,31 @@
-# TempRoom Private Relay（Cloudflare Worker）
+# OneExit Private Relay（Cloudflare Worker）
 
-把 TempRoom 的中继换成**你自己 Cloudflare 账户里的 Worker**。你的伙伴（加入方）不需要 Cloudflare 账户，也不用做任何设置：邀请码里已经带着你的 Worker 地址。
+把 OneExit 的中继换成**你自己 Cloudflare 账户里的 Worker**。你的伙伴（加入方）不需要 Cloudflare 账户，也不用做任何设置：邀请码里已经带着你的 Worker 地址。
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/temproom/tree/main/worker)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/oneexit/tree/main/worker)
 
 ## 30 秒配置
 
 ```
-① 部署                 ② 复制地址                         ③ 填进 TempRoom
-Deploy 按钮 / wrangler ─▶ https://temproom-relay.<你>.workers.dev ─▶ Share Network → Relay
+① 部署                 ② 复制地址                         ③ 填进 OneExit
+Deploy 按钮 / wrangler ─▶ https://oneexit-relay.<你>.workers.dev ─▶ Share Network → Relay
                                                                     ○ Default Relay
                                                                     ● My Cloudflare Worker
                                                                     [ https://…workers.dev ] ⏎
                                                                     ● Connected · 120ms
-④ Create Room → Copy invite      →  邀请码形如  ABCD-EF23-XXXXXXXXXXXXXXXXXXXXXXXXXX@temproom-relay.<你>.workers.dev
+④ Create Room → Copy invite      →  邀请码形如  ABCD-EF23-XXXXXXXXXXXXXXXXXXXXXXXXXX@oneexit-relay.<你>.workers.dev
 ⑤ 伙伴粘贴整段邀请码 → Join       →  自动连到你的 Worker，无需任何配置
 ```
 
 ### 方式 A：一键部署（推荐）
-点上面的按钮，在 Cloudflare 官方页面登录并确认。TempRoom 不会接触你的 Cloudflare 账户、密码或 API Token。
+点上面的按钮，在 Cloudflare 官方页面登录并确认。OneExit 不会接触你的 Cloudflare 账户、密码或 API Token。
 
 ### 方式 B：命令行
 ```bash
 cd worker
 npx wrangler login     # 在浏览器里登录 Cloudflare 官方页面
-npx wrangler deploy    # 输出 https://temproom-relay.<子域>.workers.dev
-curl https://temproom-relay.<子域>.workers.dev/health
+npx wrangler deploy    # 输出 https://oneexit-relay.<子域>.workers.dev
+curl https://oneexit-relay.<子域>.workers.dev/health
 # {"status":"ok","worker":true,"protocol":2,...}
 ```
 
@@ -34,8 +34,8 @@ curl https://temproom-relay.<子域>.workers.dev/health
 `*.workers.dev` 在中国大陆通常无法直接访问。加入方（B）通常没有代理，连不上就无法加入。解决办法如下：
 
 1. 把一个自己的域名接入 Cloudflare。
-2. 打开 Workers → `temproom-relay` → Settings → Domains & Routes → Add → Custom Domain，例如填 `relay.example.com`。
-3. 在 TempRoom 里填写 `https://relay.example.com`。
+2. 打开 Workers → `oneexit-relay` → Settings → Domains & Routes → Add → Custom Domain，例如填 `relay.example.com`。
+3. 在 OneExit 里填写 `https://relay.example.com`。
 
 即使绑定了自定义域名，Cloudflare 免费套餐在国内的速度和稳定性也因运营商而异。请先让 B 在浏览器里打开 `https://你的域名/health`，确认能看到 `"status":"ok"`。
 
@@ -64,7 +64,7 @@ curl https://temproom-relay.<子域>.workers.dev/health
 - 提示通道：`/ws`
 - 数据中继：`/ws/relay/{provider,connect,accept}`
 
-TempRoom 客户端不区分公共中继和 Worker。
+OneExit 客户端不区分公共中继和 Worker。
 
 本地调试：`npx wrangler dev`（http://127.0.0.1:8787），然后在项目根目录运行：
 ```bash

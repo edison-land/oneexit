@@ -10,25 +10,25 @@
         localStorage.getItem('color-scheme') ?? 'light dark';
     } catch {}
   </script>
-  <title>TempRoom — 借朋友用一次网络，不用交出你的 VPN</title>
+  <title>OneExit 一窗 — 借朋友用一次网络，不用交出你的 VPN</title>
   <meta name="description" content="让朋友或队友在他的 Mac 上弹出一个临时 Chrome 窗口走你的海外网络——不用发订阅链接、不暴露你的桌面，他的微信与本机摄像头照常使用。">
-  <link rel="alternate" hreflang="en" href="https://temproom.pages.dev/">
-  <link rel="alternate" hreflang="zh-CN" href="https://temproom.pages.dev/zh/">
+  <link rel="alternate" hreflang="en" href="https://oneexit.pages.dev/">
+  <link rel="alternate" hreflang="zh-CN" href="https://oneexit.pages.dev/zh/">
   <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM Context">
 
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://temproom.pages.dev/zh/">
-  <meta property="og:title" content="TempRoom — 借朋友用一次网络，不用交出你的 VPN">
+  <meta property="og:url" content="https://oneexit.pages.dev/zh/">
+  <meta property="og:title" content="OneExit 一窗 — 借朋友用一次网络，不用交出你的 VPN">
   <meta property="og:description" content="对方电脑只开一个临时 Chrome 窗口走你的 IP；他的微信、Safari 和本机摄像头照走本地网络，用完一键收回并自动清空痕迹。">
-  <meta property="og:image" content="https://temproom.pages.dev/og-card-zh.png">
+  <meta property="og:image" content="https://oneexit.pages.dev/og-card-zh.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="TempRoom — 借朋友用一次网络，不用交出你的 VPN">
+  <meta name="twitter:title" content="OneExit 一窗 — 借朋友用一次网络，不用交出你的 VPN">
   <meta name="twitter:description" content="只借出 1 个临时 Chrome 窗口，不泄订阅、不露屏幕，用完即焚。">
-  <meta name="twitter:image" content="https://temproom.pages.dev/og-card-zh.png">
+  <meta name="twitter:image" content="https://oneexit.pages.dev/og-card-zh.png">
 
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111318'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%235e6ad2'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111318'/%3E%3Cpath d='M18 8H9a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-7' fill='none' stroke='%23f4f4f6' stroke-width='2.4' stroke-linecap='round'/%3E%3Cpath d='M15 17L25 7M19 7h6v6' fill='none' stroke='%236e7bf2' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -41,13 +41,13 @@
     <div class="topbar-inner">
       <a href="/zh/" class="wordmark">
         <span class="dot" aria-hidden="true"></span>
-        <span>TempRoom</span>
+        <span>OneExit · 一窗</span>
       </a>
       <div class="topbar-right">
         <nav class="nav" aria-label="主导航">
-          <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/temproom/tree/main/worker" target="_blank" rel="noopener">私有部署</a>
-          <a href="https://github.com/edison-land/temproom/releases/tag/v2.1.0" target="_blank" rel="noopener">v2.1.0</a>
-          <a href="https://github.com/edison-land/temproom" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/oneexit/tree/main/worker" target="_blank" rel="noopener">私有部署</a>
+          <a href="https://github.com/edison-land/oneexit/releases/tag/v2.1.0" target="_blank" rel="noopener">v2.1.0</a>
+          <a href="https://github.com/edison-land/oneexit" target="_blank" rel="noopener">GitHub</a>
         </nav>
         <a href="/" lang="en" hreflang="en" class="lang-switch">EN</a>
         <button type="button" class="theme-toggle" id="themeToggle">
@@ -76,7 +76,7 @@
       <p class="hero-lead">对方电脑上只打开一个临时 Chrome 窗口走你的海外 IP——他的微信、Safari 和本机摄像头照走本地网络，用完自动清空。</p>
 
       <div class="actions">
-        <a href="../TempRoom-mac.zip" class="btn-primary" download>
+        <a href="../OneExit-mac.zip" class="btn-primary" download>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
@@ -84,7 +84,7 @@
           </svg>
           <span>下载 macOS 版（免登录即用）</span>
         </a>
-        <a href="https://github.com/edison-land/temproom" target="_blank" rel="noopener" class="btn-secondary">
+        <a href="https://github.com/edison-land/oneexit" target="_blank" rel="noopener" class="btn-secondary">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.8 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14 0 1.55-.01 2.8-.01 3.18 0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/>
           </svg>
@@ -93,7 +93,7 @@
       </div>
 
       <div class="cli-pill">
-        <code class="mono" id="quarantine-cmd">xattr -dr com.apple.quarantine TempRoom.app</code>
+        <code class="mono" id="quarantine-cmd">xattr -dr com.apple.quarantine OneExit.app</code>
         <span class="copy">
           <button type="button" class="copy-button" command="--copy" commandfor="quarantine-cmd" aria-label="复制首次打开命令">
             <span class="icon icon-copy" aria-hidden="true">
@@ -260,7 +260,7 @@
           <span class="v-box ok-box">他本机的摄像头 📷</span>
         </div>
         <h2>异地完成人脸或身份验证</h2>
-        <p>开远程桌面不仅卡成幻灯片，网页也调不了对方电脑上的摄像头。TempRoom 直接在他电脑上开独立 Chrome，同时用上你的 IP 和他的硬件。</p>
+        <p>开远程桌面不仅卡成幻灯片，网页也调不了对方电脑上的摄像头。OneExit 一窗 直接在他电脑上开独立 Chrome，同时用上你的 IP 和他的硬件。</p>
       </article>
 
       <article class="scen-card">
@@ -284,7 +284,7 @@
             <th scope="col">发 VPN 订阅链接</th>
             <th scope="col">开远程桌面</th>
             <th scope="col">装全局组网 VPN</th>
-            <th scope="col" class="col-tr">TempRoom</th>
+            <th scope="col" class="col-tr">OneExit 一窗</th>
           </tr>
         </thead>
         <tbody>
@@ -330,11 +330,11 @@
 
   <footer class="footer">
     <div class="footer-inner">
-      <span class="footer-brand">TempRoom · 免费开源 (MIT)</span>
+      <span class="footer-brand">OneExit 一窗 · 免费开源 (MIT)</span>
       <div class="footer-links">
-        <a href="https://github.com/edison-land/temproom" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://github.com/edison-land/temproom/releases/tag/v2.1.0" target="_blank" rel="noopener">版本下载</a>
-        <a href="https://github.com/edison-land/temproom/blob/main/LICENSE" target="_blank" rel="noopener">MIT 协议</a>
+        <a href="https://github.com/edison-land/oneexit" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/edison-land/oneexit/releases/tag/v2.1.0" target="_blank" rel="noopener">版本下载</a>
+        <a href="https://github.com/edison-land/oneexit/blob/main/LICENSE" target="_blank" rel="noopener">MIT 协议</a>
         <a href="/llms.txt">llms.txt</a>
       </div>
     </div>

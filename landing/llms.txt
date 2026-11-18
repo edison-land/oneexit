@@ -1,4 +1,4 @@
-# TempRoom (v2.1)
+# OneExit (一窗) (v2.1)
 
 > Share your Mac's proxy exit with one person, for one session, inside one disposable Chrome window.
 
@@ -11,18 +11,18 @@
 - **Teardown**: Ending a session, quitting, or losing heartbeat for 45s cuts all streams, kills Chrome (`pkill -9`), and deletes `/tmp/temproom-chrome-*`.
 
 ## Links
-- Website: https://temproom.pages.dev/
-- macOS Universal App (v2.1.0): https://github.com/edison-land/temproom/releases/download/v2.1.0/TempRoom-mac.zip
-- Direct Edge Mirror: https://temproom.pages.dev/TempRoom-mac.zip
-- 1-Click Cloudflare Worker Deploy: https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/temproom/tree/main/worker
-- Source (MIT): https://github.com/edison-land/temproom
+- Website: https://oneexit.pages.dev/
+- macOS Universal App (v2.1.0): https://github.com/edison-land/oneexit/releases/download/v2.1.0/OneExit-mac.zip
+- Direct Edge Mirror: https://oneexit.pages.dev/OneExit-mac.zip
+- 1-Click Cloudflare Worker Deploy: https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/oneexit/tree/main/worker
+- Source (MIT): https://github.com/edison-land/oneexit
 
 ## Quick Commands
 ```bash
 # First launch on macOS (ad-hoc signed bundle)
-xattr -dr com.apple.quarantine TempRoom.app
+xattr -dr com.apple.quarantine OneExit.app
 
 # Build from source (requires Go 1.26+, macOS 11+)
-git clone https://github.com/edison-land/temproom.git
+git clone https://github.com/edison-land/oneexit.git
 cd temproom && scripts/build.sh
 ```

@@ -74,7 +74,7 @@ export default {
     if (path === '/health') {
       return json({ status: 'ok', worker: true, protocol: PROTOCOL, time: new Date().toISOString() });
     }
-    if (path === '/') return fail('TempRoom private relay', 200);
+    if (path === '/') return fail('OneExit private relay', 200);
 
     if (path.startsWith('/api/v1/rooms/') && path !== '/api/v1/rooms/status') {
       if (req.method !== 'POST') return fail('method not allowed', 405);

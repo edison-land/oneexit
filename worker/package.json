@@ -1,7 +1,7 @@
 {
-  "name": "temproom-relay",
+  "name": "oneexit-relay",
   "private": true,
-  "description": "TempRoom private relay for Cloudflare Workers (in-memory, no storage, no logs)",
+  "description": "OneExit private relay for Cloudflare Workers (in-memory, no storage, no logs)",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy"

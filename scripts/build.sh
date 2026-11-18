@@ -32,19 +32,23 @@ else
 fi
 rm -f bin/temproom-app-arm64 bin/temproom-app-amd64
 
-APP=TempRoom.app
-rm -rf "$APP" && mkdir -p "$APP/Contents/MacOS"
-cp bin/temproom-app "$APP/Contents/MacOS/TempRoom"
+APP=OneExit.app
+rm -rf "$APP" && mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+cp bin/temproom-app "$APP/Contents/MacOS/OneExit"
+if [ -f assets/AppIcon.icns ]; then
+  cp assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+fi
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleName</key><string>TempRoom</string>
-    <key>CFBundleDisplayName</key><string>TempRoom</string>
-    <key>CFBundleExecutable</key><string>TempRoom</string>
-    <key>CFBundleIdentifier</key><string>com.temproom.app</string>
+    <key>CFBundleName</key><string>OneExit</string>
+    <key>CFBundleDisplayName</key><string>OneExit</string>
+    <key>CFBundleExecutable</key><string>OneExit</string>
+    <key>CFBundleIdentifier</key><string>com.oneexit.app</string>
+    <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundleVersion</key><string>${VERSION}</string>
     <key>CFBundleShortVersionString</key><string>${VERSION}</string>
     <key>LSMinimumSystemVersion</key><string>11.0</string>
@@ -53,7 +57,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 codesign --force --deep --sign - "$APP"
-rm -f TempRoom-mac.zip && ditto -c -k --keepParent "$APP" TempRoom-mac.zip
-[ -d landing ] && cp TempRoom-mac.zip landing/TempRoom-mac.zip  # landing download link
-rm -rf bin/TempRoom.app
-echo "built: bin/temproom-server-linux-{amd64,arm64}, $APP, TempRoom-mac.zip ($(lipo -archs bin/temproom-app))"
+rm -f OneExit-mac.zip && ditto -c -k --keepParent "$APP" OneExit-mac.zip
+[ -d landing ] && cp OneExit-mac.zip landing/OneExit-mac.zip  # landing download link
+rm -rf bin/TempRoom.app TempRoom.app TempRoom-mac.zip landing/TempRoom-mac.zip
+echo "built: bin/temproom-server-linux-{amd64,arm64}, $APP, OneExit-mac.zip ($(lipo -archs bin/temproom-app))"

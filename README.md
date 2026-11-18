@@ -1,13 +1,13 @@
-# TempRoom
+# OneExit（一窗）
 
 **Share your Mac's network exit with one person, for one session, inside one disposable Chrome window.**
 
-TempRoom 让你把本机代理（Clash / mihomo 等的 SOCKS5/mixed 端口）的出口，临时借给另一台 Mac 上的伙伴使用。伙伴只能在 TempRoom 打开的临时 Chrome 里用；全程端到端加密，你随时可以一键收回。
+OneExit 让你把本机代理（Clash / mihomo 等的 SOCKS5/mixed 端口）的出口，临时借给另一台 Mac 上的伙伴使用。伙伴只能在 OneExit 打开的临时 Chrome 里用；全程端到端加密，你随时可以一键收回。
 
-🌐 **在线演示与官网**：[temproom.pages.dev](https://temproom.pages.dev/)（[中文版](https://temproom.pages.dev/zh/)） · 📦 **macOS 客户端下载**：[GitHub Release v2.1.0](https://github.com/edison-land/temproom/releases/tag/v2.1.0)
+🌐 **在线演示与官网**：[oneexit.pages.dev](https://oneexit.pages.dev/)（[中文版](https://oneexit.pages.dev/zh/)） · 📦 **macOS 客户端下载**：[GitHub Release v2.1.0](https://github.com/edison-land/oneexit/releases/tag/v2.1.0)
 
 ```
-伙伴 B 的临时 Chrome ─▶ B 本机隧道端口 ═══ TLS 1.3 端到端 ═══▶ 中继 ═══▶ A 的 TempRoom ─▶ A 的代理 ─▶ 网站
+伙伴 B 的临时 Chrome ─▶ B 本机隧道端口 ═══ TLS 1.3 端到端 ═══▶ 中继 ═══▶ A 的 OneExit ─▶ A 的代理 ─▶ 网站
                                          (中继只看到密文)
 ```
 
@@ -16,7 +16,7 @@ TempRoom 让你把本机代理（Clash / mihomo 等的 SOCKS5/mixed 端口）的
 ## 特性
 
 - **只开放一个口子**：A 只把流量转发到自己选定的本地代理端口，本机其他服务一律不可达。
-- **只影响一个浏览器**：B 不改系统网络，也不需要管理员权限；只有 TempRoom 启动的隔离 Chrome 走隧道。
+- **只影响一个浏览器**：B 不改系统网络，也不需要管理员权限；只有 OneExit 启动的隔离 Chrome 走隧道。
 - **Fail-closed**：隧道或 A 的代理一断，B 的临时 Chrome 就无法上网，不会悄悄回落到 B 自己的网络。DNS 在远端解析，WebRTC 禁止直连 UDP。
 - **端到端加密**：邀请码里带着一段 secret，由它派生 TLS 1.3 密钥和身份校验。中继只看到密文，只拿到房间码的人也加入不了。
 - **需要批准**：B 加入后，A 要点 Approve 才会开始共享。每个房间只允许一个伙伴。
@@ -31,11 +31,11 @@ TempRoom 让你把本机代理（Clash / mihomo 等的 SOCKS5/mixed 端口）的
 
 ### 1. 直接使用（零配置，免登录）
 
-下载 `TempRoom-mac.zip` 解压打开，保持默认的 **Instant Tunnel** 即可直接建房；首次建房若本机未装 `cloudflared`，客户端会自动下载到应用缓存目录。
+下载 `OneExit-mac.zip` 解压打开，保持默认的 **Instant Tunnel** 即可直接建房；首次建房若本机未装 `cloudflared`，客户端会自动下载到应用缓存目录。
 
 > **可选进阶（中国大陆直连更稳）**：如果你希望绑定自己的域名长期使用，可一键部署到自己的 Cloudflare Worker 并在客户端切换到 `My Worker`：
 >
-> [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/temproom/tree/main/worker)
+> [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/oneexit/tree/main/worker)
 >
 > 说明见 [`worker/README.md`](worker/README.md)。自建服务器见 [`docs/DEPLOY.md`](docs/DEPLOY.md)。
 
@@ -44,12 +44,12 @@ TempRoom 让你把本机代理（Clash / mihomo 等的 SOCKS5/mixed 端口）的
 需要 macOS 11+、Go 1.26+、Xcode 命令行工具，运行时需要 Google Chrome。
 
 ```bash
-git clone https://github.com/edison-land/temproom.git
-cd temproom
-scripts/build.sh            # 产出 TempRoom.app 和 TempRoom-mac.zip（Intel + Apple Silicon）
+git clone https://github.com/edison-land/oneexit.git
+cd oneexit
+scripts/build.sh            # 产出 OneExit.app 和 OneExit-mac.zip（Intel + Apple Silicon）
 ```
 
-应用只做了 ad-hoc 签名。首次打开时右键 → 打开，或执行 `xattr -dr com.apple.quarantine TempRoom.app`。
+应用只做了 ad-hoc 签名。首次打开时右键 → 打开，或执行 `xattr -dr com.apple.quarantine OneExit.app`。
 
 ### 3. 使用
 
@@ -87,7 +87,7 @@ B 平时用的浏览器和其他应用**不会**经过 A。这是有意的设计
 | `internal/server` | 房间、令牌、租约、`/ws/relay/*` 中继 |
 | `internal/app` | 会话编排、网络校验、Chrome 门控、撤销 |
 | `internal/browser` | 隔离 Chrome 的启动与清理 |
-| `internal/config` | 本地设置（`~/Library/Application Support/TempRoom/config.json`） |
+| `internal/config` | 本地设置（`~/Library/Application Support/OneExit/config.json`） |
 | `frontend/dist` | 桌面界面源码（构建时同步到 `cmd/temproom-app/dist`） |
 | `landing/` | 静态介绍页 |
 
@@ -148,7 +148,7 @@ go test -tags uidev -run UIDev -timeout 0 ./cmd/temproom-app            # 在 :1
 
 ## 负责任地使用
 
-TempRoom 是帮信任的人临时借用你网络出口的工具。共享出口意味着伙伴的访问会以你的 IP 出现。请只分享给你信任的人，并遵守当地法律以及你的网络或代理服务商的条款。
+OneExit 是帮信任的人临时借用你网络出口的工具。共享出口意味着伙伴的访问会以你的 IP 出现。请只分享给你信任的人，并遵守当地法律以及你的网络或代理服务商的条款。
 
 ## License
 

@@ -30,6 +30,7 @@ let lang = detectInitialLang();
 
 const I18N = {
   en: {
+    brandTitle: 'OneExit',
     shareTab: 'Share Network',
     joinTab: 'Join Session',
     localProxy: 'Local Proxy',
@@ -127,6 +128,7 @@ const I18N = {
     youEnded: 'You ended the session.',
   },
   zh: {
+    brandTitle: 'OneExit · 一窗',
     shareTab: '共享网络',
     joinTab: '加入房间',
     localProxy: '本地代理',
@@ -269,6 +271,8 @@ function toggleLang() {
 function applyI18n() {
   const s = t();
   document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.title = s.brandTitle;
+  $('brand-title').textContent = s.brandTitle;
   const btnLang = $('btn-lang');
   if (lang === 'zh') {
     btnLang.textContent = 'EN';

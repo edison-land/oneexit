@@ -43,8 +43,8 @@ func main() {
 	}
 
 	wailsApp := application.New(application.Options{
-		Name:        "TempRoom",
-		Description: "Temporary Network Environment Sharing and Browser Collaboration Platform",
+		Name:        "OneExit",
+		Description: "Share your Mac's proxy exit inside one disposable Chrome window",
 		Services: []application.Service{
 			application.NewService(svc),
 		},
@@ -59,7 +59,7 @@ func main() {
 	})
 
 	wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:         "TempRoom",
+		Title:         "OneExit",
 		Width:         480,
 		Height:        640,
 		MinWidth:      440,

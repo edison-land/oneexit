@@ -1,5 +1,5 @@
-# TempRoom private relay. Deploy with: npx wrangler deploy
-name = "temproom-relay"
+# OneExit (一窗) private relay. Deploy with: npx wrangler deploy
+name = "oneexit-relay"
 main = "src/index.js"
 compatibility_date = "2025-09-01"
 workers_dev = true
