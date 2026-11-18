@@ -1,0 +1,81 @@
+name: Deploy Landing Page
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'landing/**'
+      - '.github/workflows/pages.yml'
+  release:
+    types:
+      - published
+      - edited
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-pages:
+    name: Deploy to Cloudflare Pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Cloudflare Pages secrets
+        id: cf
+        env:
+          HAS_CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          HAS_CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          if [ "$HAS_CF_TOKEN" = "true" ] && [ "$HAS_CF_ACCOUNT" = "true" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Cloudflare Pages Skipped::Configure CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repository secrets to enable automatic Cloudflare Pages deployments."
+            {
+              echo "### Cloudflare Pages Deployment Skipped"
+              echo ""
+              echo "Automatic deployment of \`landing/\` to Cloudflare Pages (\`oneexit\`) is currently inactive because Cloudflare credentials are not configured in repository secrets yet."
+              echo ""
+              echo "| Repository Secret | Configured |"
+              echo "| :--- | :--- |"
+              echo "| \`CLOUDFLARE_API_TOKEN\` | \`$HAS_CF_TOKEN\` |"
+              echo "| \`CLOUDFLARE_ACCOUNT_ID\` | \`$HAS_CF_ACCOUNT\` |"
+              echo ""
+              echo "To enable automatic deployments on \`landing/**\` changes and GitHub Releases, add both secrets under **Settings → Secrets and variables → Actions**."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Checkout repository
+        if: steps.cf.outputs.configured == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        if: steps.cf.outputs.configured == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download OneExit-mac.zip from latest GitHub Release
+        if: steps.cf.outputs.configured == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release download --repo "${{ github.repository }}" --pattern "OneExit-mac.zip" --dir landing --clobber; then
+            ls -lh landing/OneExit-mac.zip
+          else
+            echo "::warning title=OneExit-mac.zip Not Found::No published GitHub Release with OneExit-mac.zip found yet; deploying static landing files without bundled zip."
+          fi
+
+      - name: Deploy landing to Cloudflare Pages
+        if: steps.cf.outputs.configured == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NPM_CONFIG_YES: 'true'
+        run: |
+          npx wrangler pages deploy landing --project-name=oneexit --branch=main --commit-dirty=true

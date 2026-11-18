@@ -26,7 +26,7 @@ A: tunnel.Provider ──▶ 只连 A 选定的 127.0.0.1:代理端口 ──▶
 
 ```bash
 scripts/build.sh
-# 产物：bin/temproom-server-linux-{amd64,arm64}、TempRoom.app（Intel + Apple Silicon）、TempRoom-mac.zip
+# 产物：bin/temproom-server-linux-{amd64,arm64}、OneExit.app（Intel + Apple Silicon）、OneExit-mac.zip
 
 # 可选：内置一个默认中继（公共服务器）
 TEMPROOM_DEFAULT_RELAY=https://relay.example.com scripts/build.sh
@@ -36,9 +36,22 @@ TEMPROOM_DEFAULT_RELAY=https://relay.example.com scripts/build.sh
 - `frontend/dist` 是前端源码。构建脚本会把它同步到 `cmd/temproom-app/dist`（桌面应用实际嵌入的目录），不要直接改后者。
 - 需要 Go 1.26+、Xcode 命令行工具；运行时需要 Google Chrome。
 
+## CI/CD & Automated Releases
+
+仓库（[`edison-land/oneexit`](https://github.com/edison-land/oneexit)）内置三条 GitHub Actions 工作流：
+
+- **`.github/workflows/ci.yml`（Push / PR 自动验证）**：每次推送到 `main` 或提交 Pull Request 时，在 macOS 环境校验 `frontend/dist` 与 `cmd/temproom-app/dist` 同步一致性、`worker/src/index.js` 与 `frontend/dist/app.js` 语法、`go vet ./...`、`go test -race -count=1 ./...`，以及 Linux 服务端（`amd64`/`arm64`）和 macOS 桌面端的编译。
+- **`.github/workflows/release.yml`（标签自动发版）**：推送版本标签即可自动构建并发布 GitHub Release（也支持 `workflow_dispatch` 手动触发干跑构建）：
+  ```bash
+  git tag vX.Y.Z && git push origin vX.Y.Z
+  ```
+  工作流会强制清空 `TEMPROOM_DEFAULT_RELAY` 与 `TEMPROOM_SERVER_URL`（避免混入私有中继地址），运行 `scripts/build.sh` 产出通用架构 `OneExit-mac.zip`、`temproom-server-linux-amd64`、`temproom-server-linux-arm64` 与 `SHA256SUMS.txt`，并自动创建/更新 Release。
+- **`.github/workflows/pages.yml`（官网自动部署至 Cloudflare Pages）**：在 `main` 分支 `landing/**` 更新、GitHub Release 发布/编辑或手动触发时运行。因 `*.zip` 被 `.gitignore` 忽略，部署前会自动从最新 GitHub Release 下载 `OneExit-mac.zip` 放入 `landing/`，再通过 Wrangler 发布到 Cloudflare Pages 项目 `oneexit`（保证官网下载直链可用）。
+  - **可选 Secrets**：在 GitHub 仓库 **Settings → Secrets and variables → Actions** 中配置 `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ACCOUNT_ID` 后自动生效；未配置时会输出 Step Summary 指引并以成功状态跳过（不会导致 CI 变红）。
+
 ## 中继方式一：Cloudflare Worker（推荐个人使用）
 
-见 [`worker/README.md`](../worker/README.md)。部署后在 TempRoom 中操作：Share Network → Relay → My Cloudflare Worker，填入地址并回车，显示绿点 Connected 后才会保存。
+见 [`worker/README.md`](../worker/README.md)。部署后在 OneExit 中操作：Share Network → Relay → My Cloudflare Worker，填入地址并回车，显示绿点 Connected 后才会保存。
 
 - 设置保存在 `~/Library/Application Support/TempRoom/config.json`，字段为 `relay_mode` 和 `custom_worker_url`。
 - 每个会话固定使用建房时的中继。中途改设置只影响下一个房间。
@@ -102,5 +115,5 @@ live 测试使用真实代理和真实 Chrome（headless，生产参数），验
    - B 的普通浏览器仍是 B 自己的 IP。
 6. A 关闭代理：B 的临时 Chrome 加载失败，不能出现任何其他 IP；B 显示 Blocked。A 恢复代理后，B 自动回到 verified。
 7. A 点 End Session：B 在数秒内回到 “Session Ended”，临时 Chrome 被关闭，`ls $TMPDIR/temproom-chrome-*` 为空。再由 B 发起 End，同样验证一遍。
-8. A 强退（`kill -9`）：B 的临时 Chrome 立即无法加载新页面，60 秒内 B 显示会话结束。B 强退后重新打开 TempRoom：遗留的 Chrome 和临时目录被清理。
+8. A 强退（`kill -9`）：B 的临时 Chrome 立即无法加载新页面，60 秒内 B 显示会话结束。B 强退后重新打开 OneExit：遗留的 Chrome 和临时目录被清理。
 9. 第三台设备只拿到房间码（不含 secret）时无法加入；房间已有 B 时，其他人加入被拒绝。

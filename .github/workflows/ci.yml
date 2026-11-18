@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: macos-15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify frontend/dist and cmd/temproom-app/dist are in sync
+        run: diff -qr frontend/dist cmd/temproom-app/dist
+
+      - name: Syntax-check JavaScript files
+        run: |
+          node --check worker/src/index.js
+          node --check frontend/dist/app.js
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run tests with race detector
+        run: go test -race -count=1 ./...
+
+      - name: Verify cross-compilation (Linux server & macOS desktop app)
+        run: |
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /tmp/temproom-server-amd64 ./cmd/temproom-server
+          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o /tmp/temproom-server-arm64 ./cmd/temproom-server
+          CGO_ENABLED=1 go build -o /tmp/oneexit-app ./cmd/temproom-app
+          rm -f /tmp/temproom-server-amd64 /tmp/temproom-server-arm64 /tmp/oneexit-app

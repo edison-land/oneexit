@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strconv"
 	"temproom/internal/device"
 	"temproom/internal/egress"
 	"temproom/internal/network"
@@ -206,7 +207,7 @@ func handleMockClient(conn net.Conn, supportUDP bool) {
 	portBytes := make([]byte, 2)
 	_, _ = io.ReadFull(conn, portBytes)
 	dstPort := int(portBytes[0])<<8 | int(portBytes[1])
-	target := fmt.Sprintf("%s:%d", dstAddr, dstPort)
+	target := net.JoinHostPort(dstAddr, strconv.Itoa(dstPort))
 
 	// Command 0x03: UDP ASSOCIATE
 	if cmd == 0x03 {

@@ -8,6 +8,7 @@ Share your Mac's network exit with one person, for one session, inside one isola
 
 [Live Demo & Download](https://oneexit.pages.dev/) · [中文官网](https://oneexit.pages.dev/zh/) · [Release v2.1.0](https://github.com/edison-land/oneexit/releases/tag/v2.1.0) · [1-Click Cloudflare Worker](https://deploy.workers.cloudflare.com/?url=https://github.com/edison-land/oneexit/tree/main/worker)
 
+[![CI](https://github.com/edison-land/oneexit/actions/workflows/ci.yml/badge.svg)](https://github.com/edison-land/oneexit/actions/workflows/ci.yml)
 [![GitHub stars](https://img.shields.io/github/stars/edison-land/oneexit?style=flat&color=f97316)](https://github.com/edison-land/oneexit/stargazers)
 [![License: MIT](https://img.shields.io/badge/license-MIT-3b82f6?style=flat)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat&logo=go&logoColor=white)](go.mod)
